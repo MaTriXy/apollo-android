@@ -20,13 +20,13 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.functions.Predicate;
+import okhttp3.Dispatcher;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.internal.io.FileSystem;
 import okhttp3.internal.io.InMemoryFileSystem;
 import okhttp3.mockwebserver.MockWebServer;
 
-import static com.apollographql.apollo.Utils.TIME_OUT_SECONDS;
 import static com.apollographql.apollo.Utils.assertResponse;
 import static com.apollographql.apollo.Utils.enqueueAndAssertResponse;
 import static com.apollographql.apollo.Utils.mockResponse;
@@ -34,8 +34,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 public class ApolloPrefetchTest {
   private ApolloClient apolloClient;
-  private MockWebServer server;
-  @Rule public InMemoryFileSystem inMemoryFileSystem = new InMemoryFileSystem();
+  @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final InMemoryFileSystem inMemoryFileSystem = new InMemoryFileSystem();
   okhttp3.Request lastHttRequest;
   okhttp3.Response lastHttResponse;
   private MockHttpCacheStore cacheStore;
@@ -43,7 +43,6 @@ public class ApolloPrefetchTest {
 
   @Before
   public void setup() {
-    server = new MockWebServer();
     cacheStore = new MockHttpCacheStore();
     cacheStore.delegate = new DiskLruHttpCacheStore(inMemoryFileSystem, new File("/cache/"), Integer.MAX_VALUE);
     okHttpClient = new OkHttpClient.Builder()
@@ -54,26 +53,24 @@ public class ApolloPrefetchTest {
             return lastHttResponse;
           }
         })
+        .dispatcher(new Dispatcher(Utils.immediateExecutorService()))
         .build();
 
     apolloClient = ApolloClient.builder()
         .serverUrl(server.url("/"))
         .okHttpClient(okHttpClient)
+        .dispatcher(Utils.immediateExecutor())
         .httpCache(new ApolloHttpCache(cacheStore, null))
         .build();
   }
 
   @After public void tearDown() {
-    try {
-      apolloClient.clearHttpCache();
-      server.shutdown();
-    } catch (Exception ignore) {
-    }
+    apolloClient.clearHttpCache();
   }
 
   @Test public void prefetchDefault() throws IOException, ApolloException {
     server.enqueue(mockResponse("HttpCacheTestAllPlanets.json"));
-    awaitDone(apolloClient.prefetch(new AllPlanetsQuery()));
+    prefetch(apolloClient.prefetch(new AllPlanetsQuery()));
     checkCachedResponse("HttpCacheTestAllPlanets.json");
     assertResponse(
         apolloClient
@@ -91,10 +88,11 @@ public class ApolloPrefetchTest {
     ApolloClient apolloClient = ApolloClient.builder()
         .serverUrl(server.url("/"))
         .okHttpClient(okHttpClient)
+        .dispatcher(Utils.immediateExecutor())
         .build();
 
     server.enqueue(mockResponse("HttpCacheTestAllPlanets.json"));
-    awaitDone(apolloClient.prefetch(new AllPlanetsQuery()));
+    prefetch(apolloClient.prefetch(new AllPlanetsQuery()));
 
     enqueueAndAssertResponse(
         server,
@@ -117,7 +115,6 @@ public class ApolloPrefetchTest {
 
     Rx2Apollo.from(apolloClient.prefetch(new AllPlanetsQuery()))
         .test()
-        .awaitDone(TIME_OUT_SECONDS, TimeUnit.SECONDS)
         .assertError(Exception.class);
     checkNoCachedResponse();
 
@@ -125,7 +122,6 @@ public class ApolloPrefetchTest {
     faultyCacheStore.failStrategy(FaultyHttpCacheStore.FailStrategy.FAIL_BODY_WRITE);
     Rx2Apollo.from(apolloClient.prefetch(new AllPlanetsQuery()))
         .test()
-        .awaitDone(TIME_OUT_SECONDS, TimeUnit.SECONDS)
         .assertError(Exception.class);
     checkNoCachedResponse();
   }
@@ -144,9 +140,8 @@ public class ApolloPrefetchTest {
     assertThat(cachedResponse).isNull();
   }
 
-  private static void awaitDone(ApolloPrefetch prefetch) {
-    Rx2Apollo.from(prefetch)
-        .test()
-        .awaitDone(TIME_OUT_SECONDS, TimeUnit.SECONDS);
+  @SuppressWarnings("CheckReturnValue")
+  private static void prefetch(ApolloPrefetch prefetch) {
+    Rx2Apollo.from(prefetch).test();
   }
 }

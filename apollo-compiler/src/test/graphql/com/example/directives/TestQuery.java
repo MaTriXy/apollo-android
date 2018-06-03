@@ -13,7 +13,7 @@ import com.apollographql.apollo.api.ResponseWriter;
 import com.apollographql.apollo.api.internal.Optional;
 import com.apollographql.apollo.api.internal.Utils;
 import java.io.IOException;
-import java.lang.Long;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
@@ -37,6 +37,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    }\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "330f0fe4baea1b2e41c551ea45b413502c32080fc6581ed3756890896a897ae9";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -55,7 +57,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   @Override
   public String operationId() {
-    return "330f0fe4baea1b2e41c551ea45b413502c32080fc6581ed3756890896a897ae9";
+    return OPERATION_ID;
   }
 
   @Override
@@ -236,7 +238,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forObject("friendsConnection", "friendsConnection", null, true, Arrays.<ResponseField.Condition>asList(ResponseField.Condition.booleanCondition("skipFriends", true)))
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
     final Optional<String> name;
 
@@ -248,14 +250,14 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public Hero(@Nonnull String __typename, @Nullable String name,
+    public Hero(@NotNull String __typename, @Nullable String name,
         @Nullable FriendsConnection friendsConnection) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Optional.fromNullable(name);
       this.friendsConnection = Optional.fromNullable(friendsConnection);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
@@ -347,12 +349,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static class FriendsConnection {
     static final ResponseField[] $responseFields = {
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
-      ResponseField.forLong("totalCount", "totalCount", null, true, Collections.<ResponseField.Condition>emptyList())
+      ResponseField.forInt("totalCount", "totalCount", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final Optional<Long> totalCount;
+    final Optional<Integer> totalCount;
 
     private volatile String $toString;
 
@@ -360,19 +362,19 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public FriendsConnection(@Nonnull String __typename, @Nullable Long totalCount) {
+    public FriendsConnection(@NotNull String __typename, @Nullable Integer totalCount) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.totalCount = Optional.fromNullable(totalCount);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The total number of friends
      */
-    public Optional<Long> totalCount() {
+    public Optional<Integer> totalCount() {
       return this.totalCount;
     }
 
@@ -381,7 +383,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         @Override
         public void marshal(ResponseWriter writer) {
           writer.writeString($responseFields[0], __typename);
-          writer.writeLong($responseFields[1], totalCount.isPresent() ? totalCount.get() : null);
+          writer.writeInt($responseFields[1], totalCount.isPresent() ? totalCount.get() : null);
         }
       };
     }
@@ -428,7 +430,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       @Override
       public FriendsConnection map(ResponseReader reader) {
         final String __typename = reader.readString($responseFields[0]);
-        final Long totalCount = reader.readLong($responseFields[1]);
+        final Integer totalCount = reader.readInt($responseFields[1]);
         return new FriendsConnection(__typename, totalCount);
       }
     }

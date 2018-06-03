@@ -14,11 +14,13 @@ import com.nytimes.android.external.cache.Weigher;
 
 import java.nio.charset.Charset;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
@@ -55,13 +57,13 @@ public final class LruNormalizedCache extends NormalizedCache {
     lruCache = lruCacheBuilder.build();
   }
 
-  @Nullable @Override public Record loadRecord(@Nonnull final String key, @Nonnull final CacheHeaders cacheHeaders) {
+  @Nullable @Override public Record loadRecord(@NotNull final String key, @NotNull final CacheHeaders cacheHeaders) {
     final Record record;
     try {
       record = lruCache.get(key, new Callable<Record>() {
         @Override public Record call() throws Exception {
           return nextCache().flatMap(new Function<NormalizedCache, Optional<Record>>() {
-            @Nonnull @Override public Optional<Record> apply(@Nonnull NormalizedCache cache) {
+            @NotNull @Override public Optional<Record> apply(@NotNull NormalizedCache cache) {
               return Optional.fromNullable(cache.loadRecord(key, cacheHeaders));
             }
           }).get(); // lruCache.get(key, callable) requires non-null.
@@ -81,19 +83,19 @@ public final class LruNormalizedCache extends NormalizedCache {
   @SuppressWarnings("ResultOfMethodCallIgnored")
   @Override public void clearAll() {
     nextCache().apply(new Action<NormalizedCache>() {
-      @Override public void apply(@Nonnull NormalizedCache cache) {
+      @Override public void apply(@NotNull NormalizedCache cache) {
         cache.clearAll();
       }
     });
     clearCurrentCache();
   }
 
-  @Override public boolean remove(@Nonnull final CacheKey cacheKey) {
+  @Override public boolean remove(@NotNull final CacheKey cacheKey) {
     checkNotNull(cacheKey, "cacheKey == null");
     boolean result;
 
     result = nextCache().map(new Function<NormalizedCache, Boolean>() {
-      @Nonnull @Override public Boolean apply(@Nonnull NormalizedCache cache) {
+      @NotNull @Override public Boolean apply(@NotNull NormalizedCache cache) {
         return cache.remove(cacheKey);
       }
     }).or(Boolean.FALSE);
@@ -110,12 +112,12 @@ public final class LruNormalizedCache extends NormalizedCache {
     lruCache.invalidateAll();
   }
 
-  @Nonnull
-  protected Set<String> performMerge(@Nonnull final Record apolloRecord, @Nonnull final CacheHeaders cacheHeaders) {
+  @NotNull
+  protected Set<String> performMerge(@NotNull final Record apolloRecord, @NotNull final CacheHeaders cacheHeaders) {
     final Record oldRecord = lruCache.getIfPresent(apolloRecord.key());
     if (oldRecord == null) {
       lruCache.put(apolloRecord.key(), apolloRecord);
-      return Collections.emptySet();
+      return apolloRecord.keys();
     } else {
       Set<String> changedKeys = oldRecord.mergeWith(apolloRecord);
 
@@ -123,5 +125,14 @@ public final class LruNormalizedCache extends NormalizedCache {
       lruCache.put(apolloRecord.key(), oldRecord);
       return changedKeys;
     }
+  }
+
+  @Override public Map<Class, Map<String, Record>> dump() {
+    Map<Class, Map<String, Record>> dump = new LinkedHashMap<>();
+    dump.put(this.getClass(), Collections.unmodifiableMap(new LinkedHashMap<>(lruCache.asMap())));
+    if (nextCache().isPresent()) {
+      dump.putAll(nextCache().get().dump());
+    }
+    return dump;
   }
 }

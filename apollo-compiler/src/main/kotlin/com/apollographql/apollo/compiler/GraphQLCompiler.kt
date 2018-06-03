@@ -30,6 +30,11 @@ class GraphQLCompiler {
         generateModelBuilder = args.generateModelBuilder,
         useJavaBeansSemanticNaming = args.useJavaBeansSemanticNaming
     )
+
+    if (irPackageName.isNotEmpty()) {
+      File(args.outputDir, irPackageName.replace('.', File.separatorChar)).deleteRecursively()
+    }
+
     ir.writeJavaFiles(
         context = context,
         outputDir = args.outputDir,
@@ -74,8 +79,9 @@ class GraphQLCompiler {
 
   companion object {
     const val FILE_EXTENSION = "graphql"
+    @JvmField
     val OUTPUT_DIRECTORY = listOf("generated", "source", "apollo")
-    const val APOLLOCODEGEN_VERSION = "0.18.3"
+    const val APOLLOCODEGEN_VERSION = "0.19.1"
   }
 
   data class Arguments(

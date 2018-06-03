@@ -24,8 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
@@ -38,6 +38,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "  }\n"
       + "}";
 
+  public static final String OPERATION_ID = "7e7fbeaf6d1978c07e66bb041e7022ad5a7b9b8ca84b28b4faadfb1950ae340c";
+
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
   public static final OperationName OPERATION_NAME = new OperationName() {
@@ -49,14 +51,14 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(@Nonnull String id) {
+  public TestQuery(@NotNull String id) {
     Utils.checkNotNull(id, "id == null");
     variables = new TestQuery.Variables(id);
   }
 
   @Override
   public String operationId() {
-    return "7e7fbeaf6d1978c07e66bb041e7022ad5a7b9b8ca84b28b4faadfb1950ae340c";
+    return OPERATION_ID;
   }
 
   @Override
@@ -89,12 +91,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public static final class Builder {
-    private @Nonnull String id;
+    private @NotNull String id;
 
     Builder() {
     }
 
-    public Builder id(@Nonnull String id) {
+    public Builder id(@NotNull String id) {
       this.id = id;
       return this;
     }
@@ -106,16 +108,16 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public static final class Variables extends Operation.Variables {
-    private final @Nonnull String id;
+    private final @NotNull String id;
 
     private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
-    Variables(@Nonnull String id) {
+    Variables(@NotNull String id) {
       this.id = id;
       this.valueMap.put("id", id);
     }
 
-    public @Nonnull String id() {
+    public @NotNull String id() {
       return id;
     }
 
@@ -138,9 +140,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static class Data implements Operation.Data {
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("starship", "starship", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("id", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("kind", "Variable")
-          .put("variableName", "id")
+      .put("id", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "id")
         .build())
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
@@ -228,11 +230,11 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forList("coordinates", "coordinates", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String id;
+    final @NotNull String id;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<List<List<Double>>> coordinates;
 
@@ -242,7 +244,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public Starship(@Nonnull String __typename, @Nonnull String id, @Nonnull String name,
+    public Starship(@NotNull String __typename, @NotNull String id, @NotNull String name,
         @Nullable List<List<Double>> coordinates) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.id = Utils.checkNotNull(id, "id == null");
@@ -250,21 +252,21 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       this.coordinates = Optional.fromNullable(coordinates);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The ID of the starship
      */
-    public @Nonnull String id() {
+    public @NotNull String id() {
       return this.id;
     }
 
     /**
      * The name of the starship
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 

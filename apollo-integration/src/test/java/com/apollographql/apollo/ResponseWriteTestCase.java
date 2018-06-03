@@ -16,12 +16,13 @@ import com.apollographql.apollo.integration.normalizer.fragment.HeroWithFriendsF
 import com.apollographql.apollo.integration.normalizer.fragment.HumanWithIdFragment;
 import com.apollographql.apollo.integration.normalizer.type.CustomType;
 import com.apollographql.apollo.integration.normalizer.type.Episode;
+import com.apollographql.apollo.response.CustomTypeAdapter;
+import com.apollographql.apollo.response.CustomTypeValue;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import java.util.Date;
 import java.util.Locale;
 
 import io.reactivex.functions.Predicate;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -43,12 +45,13 @@ import static java.util.Collections.singletonList;
 @SuppressWarnings("SimpleDateFormatConstant")
 public class ResponseWriteTestCase {
   private ApolloClient apolloClient;
-  private MockWebServer server;
+  @Rule public final MockWebServer server = new MockWebServer();
   private SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-mm-dd", Locale.US);
 
   @Before public void setUp() {
-    server = new MockWebServer();
-    OkHttpClient okHttpClient = new OkHttpClient.Builder().build();
+    OkHttpClient okHttpClient = new OkHttpClient.Builder()
+        .dispatcher(new Dispatcher(Utils.immediateExecutorService()))
+        .build();
 
     apolloClient = ApolloClient.builder()
         .serverUrl(server.url("/"))
@@ -56,26 +59,19 @@ public class ResponseWriteTestCase {
         .normalizedCache(new LruNormalizedCacheFactory(EvictionPolicy.NO_EVICTION), new IdFieldCacheKeyResolver())
         .dispatcher(Utils.immediateExecutor())
         .addCustomTypeAdapter(CustomType.DATE, new CustomTypeAdapter<Date>() {
-          @Override public Date decode(String value) {
+          @Override public Date decode(CustomTypeValue value) {
             try {
-              return DATE_TIME_FORMAT.parse(value);
+              return DATE_TIME_FORMAT.parse(value.value.toString());
             } catch (ParseException e) {
               throw new RuntimeException(e);
             }
           }
 
-          @Override public String encode(Date value) {
-            return DATE_TIME_FORMAT.format(value);
+          @Override public CustomTypeValue encode(Date value) {
+            return new CustomTypeValue.GraphQLString(DATE_TIME_FORMAT.format(value));
           }
         })
         .build();
-  }
-
-  @After public void tearDown() {
-    try {
-      server.shutdown();
-    } catch (IOException ignored) {
-    }
   }
 
   @Test

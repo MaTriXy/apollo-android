@@ -27,7 +27,8 @@
 							"value": {
 								"kind": "Variable",
 								"variableName": "episode"
-							}
+							},
+							"type": "Episode"
 						}
 					],
 					"isConditional": false,
@@ -96,6 +97,12 @@
 				{
 					"name": "DEPRECATED",
 					"description": "Test deprecated enum value",
+					"isDeprecated": true,
+					"deprecationReason": "For test purpose only"
+				},
+				{
+					"name": "new",
+					"description": "Test java reserved word",
 					"isDeprecated": true,
 					"deprecationReason": "For test purpose only"
 				}

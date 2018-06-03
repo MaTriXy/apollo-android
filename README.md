@@ -8,6 +8,33 @@ Apollo-Android is a GraphQL compliant client that generates Java models from sta
 
 Apollo-Android is designed primarily with Android in mind but you can use it in any java/kotlin app. The android-only parts are in `apollo-android-support` and are only needed to use SQLite as a cache or the android main thread for callbacks.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE (https://github.com/thlorenz/doctoc) -->
+**Table of Contents**
+
+- [Adding Apollo to your Project](#adding-apollo-to-your-project)
+  - [Kotlin](#kotlin)
+- [Generate Code using Apollo](#generate-code-using-apollo)
+- [Consuming Code](#consuming-code)
+- [Custom Scalar Types](#custom-scalar-types)
+- [Support For Cached Responses](#support-for-cached-responses)
+  - [Usage](#usage)
+- [RxJava Support](#rxjava-support)
+  - [Usage](#usage-1)
+- [Gradle Configuration of Apollo Android](#gradle-configuration-of-apollo-android)
+  - [Optional Support](#optional-support)
+    - [Usage](#usage-2)
+  - [Semantic Naming](#semantic-naming)
+    - [Usage](#usage-3)
+  - [Java Beans Semantic Naming for Accessors](#java-beans-semantic-naming-for-accessors)
+    - [Usage](#usage-4)
+  - [Explicit Schema location](#explicit-schema-location)
+    - [Usage](#usage-5)
+  - [Download](#download)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Adding Apollo to your Project
 
 The latest Gradle plugin version is [ ![Download](https://api.bintray.com/packages/apollographql/android/apollo-gradle-plugin/images/download.svg) ](https://bintray.com/apollographql/android/apollo-gradle-plugin/_latestVersion)
@@ -38,12 +65,12 @@ buildscript {
     maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
   }
   dependencies {
-    classpath 'com.apollographql.apollo:apollo-gradle-plugin:0.4.4-SNAPSHOT'
+    classpath 'com.apollographql.apollo:apollo-gradle-plugin:0.5.1-SNAPSHOT'
   }
 }
 
 dependencies {
-  compile 'com.apollographql.apollo:apollo-runtime:0.4.4-SNAPSHOT'
+  compile 'com.apollographql.apollo:apollo-runtime:0.5.1-SNAPSHOT'
 }
 ```
 
@@ -54,17 +81,6 @@ apply plugin: 'com.apollographql.android'
 ```
 
 The Android Plugin must be applied before the Apollo plugin
-
-### Kotlin
-
-If using Apollo in your Kotlin project, make sure to apply the Apollo plugin before your Kotlin plugins within your app module's `build.gradle`:
-
-```
-apply plugin: 'com.apollographql.android'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
-...
-```
 
 ## Generate Code using Apollo
 
@@ -131,7 +147,7 @@ apolloClient.query(
     .build()
 ).enqueue(new ApolloCall.Callback<FeedQuery.Data>() {
 
-  @Override public void onResponse(@Nonnull Response<FeedQuery.Data> dataResponse) {
+  @Override public void onResponse(@NotNull Response<FeedQuery.Data> dataResponse) {
 
     final StringBuffer buffer = new StringBuffer();
     for (FeedQuery.Data.Feed feed : dataResponse.data().feed()) {
@@ -152,7 +168,7 @@ apolloClient.query(
       
   }
 
-  @Override public void onFailure(@Nonnull Throwable t) {
+  @Override public void onFailure(@NotNull Throwable t) {
     Log.e(TAG, t.getMessage(), t);
   }
 });       
@@ -160,41 +176,37 @@ apolloClient.query(
 
 ## Custom Scalar Types
 
-Apollo supports Custom Scalar Types like `DateTime` for an example.
+Apollo supports Custom Scalar Types like `Date`.
 
-You first need to define the mapping in your build.gradle file. This will tell the compiler what type to use when generating the classes.
+You first need to define the mapping in your build.gradle file. This will tell the code generator/gradle plugin what type to use when generating the classes.
 
 ```gradle
 apollo {
-    customTypeMapping['DateTime'] = "java.util.Date"
-    customTypeMapping['Currency'] = "java.math.BigDecimal"
+  customTypeMapping['Date'] = "java.util.Date"
 }
 ```
 
-Then register your custom adapter:
+Next register your custom adapter & add it to your Apollo Client Builder:
 
 ```java
-CustomTypeAdapter<Date> customTypeAdapter = new CustomTypeAdapter<Date>() {
-  @Override
-  public Date decode(String value) {
-    try {
-      return ISO8601_DATE_FORMAT.parse(value);
-    } catch (ParseException e) {
-      throw new RuntimeException(e);
-    }
-  }
+ dateCustomTypeAdapter = new CustomTypeAdapter<Date>() {
+      @Override public Date decode(CustomTypeValue value) {
+        try {
+          return DATE_FORMAT.parse(value.value.toString());
+        } catch (ParseException e) {
+          throw new RuntimeException(e);
+        }
+      }
 
-  @Override
-  public String encode(Date value) {
-    return ISO8601_DATE_FORMAT.format(value);
-  }
-};
+      @Override public CustomTypeValue encode(Date value) {
+        return new CustomTypeValue.GraphQLString(DATE_FORMAT.format(value));
+      }
+    };
 
-// use on creating ApolloClient
 ApolloClient.builder()
   .serverUrl(serverUrl)
   .okHttpClient(okHttpClient)
-  .addCustomTypeAdapter(CustomType.DATETIME, customTypeAdapter)
+  .addCustomTypeAdapter(CustomType.DATE, dateCustomTypeAdapter)
   .build();
 ```
 
@@ -245,11 +257,11 @@ apolloClient
   .httpCachePolicy(HttpCachePolicy.CACHE_FIRST)
   .enqueue(new ApolloCall.Callback<FeedQuery.Data>() {
 
-    @Override public void onResponse(@Nonnull Response<FeedQuery.Data> dataResponse) {
+    @Override public void onResponse(@NotNull Response<FeedQuery.Data> dataResponse) {
       ...
     }
 
-    @Override public void onFailure(@Nonnull Throwable t) {
+    @Override public void onFailure(@NotNull Throwable t) {
       ...
     }
   }); 
@@ -277,13 +289,13 @@ NormalizedCacheFactory cacheFactory = new SqlNormalizedCacheFactory(apolloSqlHel
 
 //Create the cache key resolver, this example works well when all types have globally unique ids.
 CacheKeyResolver resolver =  new CacheKeyResolver() {
- @Nonnull @Override
-   public CacheKey fromFieldRecordSet(@Nonnull ResponseField field, @Nonnull Map<String, Object> recordSet) {
+ @NotNull @Override
+   public CacheKey fromFieldRecordSet(@NotNull ResponseField field, @NotNull Map<String, Object> recordSet) {
      return formatCacheKey((String) recordSet.get("id"));
    }
  
-   @Nonnull @Override
-   public CacheKey fromFieldArguments(@Nonnull ResponseField field, @Nonnull Operation.Variables variables) {
+   @NotNull @Override
+   public CacheKey fromFieldArguments(@NotNull ResponseField field, @NotNull Operation.Variables variables) {
      return formatCacheKey((String) field.resolveArgument("id", variables));
    }
  
@@ -407,12 +419,12 @@ disposable.clear();
 For a concrete example of using Rx wrappers for apollo types, checkout the sample app in the [`apollo-sample`](apollo-sample) module.
 
 ##  Gradle Configuration of Apollo Android
-Apollo Android comes with logical defaults that will work for the majority of use cases, below you will find additional configuration that will add Optional Support, Semantic Query Naming & reduction in method count of generated code.
+Apollo Android comes with logical defaults that will work for the majority of use cases, below you will find additional configuration that will add Optional Support & Semantic Query Naming.
 
 ### Optional Support
 By default Apollo-Android will return `null` when a graph api returns a `null` field.  Apollo allows you to configure the generated code to instead use a Guava `Optional<T>` or a shaded`Apollo Optional<T>` rather than simply returning the scalar value or null.
 
-### Usage
+#### Usage
 
 ```java
 apollo {
@@ -429,7 +441,7 @@ alternatively you can turn on Semantic Naming which will allow you to define que
 
 With Semantic Naming enabled you will still see a SomeQuery.java generated same as the first query above.
 
-### Usage 
+#### Usage 
 
 ```java
 apollo {
@@ -458,7 +470,7 @@ class Foo {
 }
 ```
 
-### Usage
+#### Usage
 ```groovy
 apollo {
   useJavaBeansSemanticNaming = true
@@ -478,6 +490,15 @@ apollo {
   schemaFilePath = "/path_to_schema_file/my-schema.json"
   outputPackageName = "com.my-example.graphql.api"
 }
+```
+
+### Use system pre-installed `apollo-codegen`
+By default Apollo will enable gradle plugin that installs Node-JS and downloads `apollo-codegen` module into your project's build directory. If you already have Node-JS and `apollo-codegen` module installed on your computer, you can enable Apollo to use it and skip these steps. Apollo will fallback to default behaviour if verification of pre-installed version of `apollo-codegen` fails.          
+
+#### Usage
+To enable usage of pre-installed `apollo-codegen` module, set gradle system property `apollographql.useGlobalApolloCodegen` (for example in `gradle.properties` file):
+```properties
+systemProp.apollographql.useGlobalApolloCodegen=true
 ```
 
 ### Download

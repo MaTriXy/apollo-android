@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
@@ -34,8 +34,11 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    __typename\n"
       + "    name\n"
       + "    deprecated\n"
+      + "    deprecatedBool\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "d62c8a7f6b24719252b8516389ca97a605b57cdebbbc523f4644847c5bf4efed";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -48,14 +51,14 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(@Nonnull Input<Episode> episode) {
+  public TestQuery(@NotNull Input<Episode> episode) {
     Utils.checkNotNull(episode, "episode == null");
     variables = new TestQuery.Variables(episode);
   }
 
   @Override
   public String operationId() {
-    return "c86775f24ab7d183b6c219a6df0eba15f39b9efb6ca5ef235e3142c11b447fcd";
+    return OPERATION_ID;
   }
 
   @Override
@@ -98,7 +101,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this;
     }
 
-    public Builder episodeInput(@Nonnull Input<Episode> episode) {
+    public Builder episodeInput(@NotNull Input<Episode> episode) {
       this.episode = Utils.checkNotNull(episode, "episode == null");
       return this;
     }
@@ -135,7 +138,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         @Override
         public void marshal(InputFieldWriter writer) throws IOException {
           if (episode.defined) {
-            writer.writeString("episode", episode.value != null ? episode.value.name() : null);
+            writer.writeString("episode", episode.value != null ? episode.value.rawValue() : null);
           }
         }
       };
@@ -145,9 +148,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static class Data implements Operation.Data {
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("hero", "hero", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("kind", "Variable")
-          .put("variableName", "episode")
+      .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "episode")
         .build())
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
@@ -231,14 +234,17 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
     static final ResponseField[] $responseFields = {
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList()),
-      ResponseField.forString("deprecated", "deprecated", null, false, Collections.<ResponseField.Condition>emptyList())
+      ResponseField.forString("deprecated", "deprecated", null, false, Collections.<ResponseField.Condition>emptyList()),
+      ResponseField.forBoolean("deprecatedBool", "deprecatedBool", null, false, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
-    final @Nonnull @Deprecated String deprecated;
+    final @NotNull @Deprecated String deprecated;
+
+    final @Deprecated boolean deprecatedBool;
 
     private volatile String $toString;
 
@@ -246,21 +252,22 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public Hero(@Nonnull String __typename, @Nonnull String name,
-        @Nonnull @Deprecated String deprecated) {
+    public Hero(@NotNull String __typename, @NotNull String name,
+        @NotNull @Deprecated String deprecated, @Deprecated boolean deprecatedBool) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.deprecated = Utils.checkNotNull(deprecated, "deprecated == null");
+      this.deprecatedBool = deprecatedBool;
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The name of the character
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 
@@ -268,8 +275,16 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
      * Test deprecated field
      * @deprecated For test purpose only
      */
-    public @Nonnull @Deprecated String deprecated() {
+    public @NotNull @Deprecated String deprecated() {
       return this.deprecated;
+    }
+
+    /**
+     * Test deprecated field
+     * @deprecated For test purpose only
+     */
+    public @Deprecated boolean deprecatedBool() {
+      return this.deprecatedBool;
     }
 
     public ResponseFieldMarshaller marshaller() {
@@ -279,6 +294,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
           writer.writeString($responseFields[0], __typename);
           writer.writeString($responseFields[1], name);
           writer.writeString($responseFields[2], deprecated);
+          writer.writeBoolean($responseFields[3], deprecatedBool);
         }
       };
     }
@@ -289,7 +305,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         $toString = "Hero{"
           + "__typename=" + __typename + ", "
           + "name=" + name + ", "
-          + "deprecated=" + deprecated
+          + "deprecated=" + deprecated + ", "
+          + "deprecatedBool=" + deprecatedBool
           + "}";
       }
       return $toString;
@@ -304,7 +321,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         Hero that = (Hero) o;
         return this.__typename.equals(that.__typename)
          && this.name.equals(that.name)
-         && this.deprecated.equals(that.deprecated);
+         && this.deprecated.equals(that.deprecated)
+         && this.deprecatedBool == that.deprecatedBool;
       }
       return false;
     }
@@ -319,6 +337,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         h ^= name.hashCode();
         h *= 1000003;
         h ^= deprecated.hashCode();
+        h *= 1000003;
+        h ^= Boolean.valueOf(deprecatedBool).hashCode();
         $hashCode = h;
         $hashCodeMemoized = true;
       }
@@ -331,7 +351,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         final String __typename = reader.readString($responseFields[0]);
         final String name = reader.readString($responseFields[1]);
         final String deprecated = reader.readString($responseFields[2]);
-        return new Hero(__typename, name, deprecated);
+        final boolean deprecatedBool = reader.readBoolean($responseFields[3]);
+        return new Hero(__typename, name, deprecated, deprecatedBool);
       }
     }
   }

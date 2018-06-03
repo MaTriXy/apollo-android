@@ -11,10 +11,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
@@ -42,7 +43,7 @@ public abstract class NormalizedCache {
    * @param cacheHeaders The cache headers associated with the request which generated this record.
    * @return The {@link Record} for key. If not present return null.
    */
-  @Nullable public abstract Record loadRecord(@Nonnull String key, @Nonnull CacheHeaders cacheHeaders);
+  @Nullable public abstract Record loadRecord(@NotNull String key, @NotNull CacheHeaders cacheHeaders);
 
   /**
    * Calls through to {@link NormalizedCache#loadRecord(String, CacheHeaders)}. Implementations should override this
@@ -51,7 +52,7 @@ public abstract class NormalizedCache {
    * @param keys         The set of {@link Record} keys to read.
    * @param cacheHeaders The cache headers associated with the request which generated this record.
    */
-  @Nonnull public Collection<Record> loadRecords(@Nonnull Collection<String> keys, @Nonnull CacheHeaders cacheHeaders) {
+  @NotNull public Collection<Record> loadRecords(@NotNull Collection<String> keys, @NotNull CacheHeaders cacheHeaders) {
     List<Record> records = new ArrayList<>(keys.size());
     for (String key : keys) {
       final Record record = loadRecord(key, cacheHeaders);
@@ -67,7 +68,7 @@ public abstract class NormalizedCache {
    * @param cacheHeaders The {@link CacheHeaders} associated with the request which generated this record.
    * @return A set of record field keys that have changed. This set is returned by {@link Record#mergeWith(Record)}.
    */
-  @Nonnull public Set<String> merge(@Nonnull final Record record, @Nonnull final CacheHeaders cacheHeaders) {
+  @NotNull public Set<String> merge(@NotNull final Record record, @NotNull final CacheHeaders cacheHeaders) {
     checkNotNull(record, "apolloRecord == null");
     checkNotNull(cacheHeaders, "cacheHeaders == null");
 
@@ -76,7 +77,7 @@ public abstract class NormalizedCache {
     }
 
     Set<String> nextCacheChangedKeys = nextCache().map(new Function<NormalizedCache, Set<String>>() {
-      @Nonnull @Override public Set<String> apply(@Nonnull NormalizedCache cache) {
+      @NotNull @Override public Set<String> apply(@NotNull NormalizedCache cache) {
         return cache.merge(record, cacheHeaders);
       }
     }).or(Collections.<String>emptySet());
@@ -97,14 +98,18 @@ public abstract class NormalizedCache {
    * @param cacheHeaders The {@link CacheHeaders} associated with the request which generated this record.
    * @return A set of record field keys that have changed. This set is returned by {@link Record#mergeWith(Record)}.
    */
-  @Nonnull
-  public Set<String> merge(@Nonnull final Collection<Record> recordSet, @Nonnull final CacheHeaders cacheHeaders) {
+  @NotNull
+  public Set<String> merge(@NotNull final Collection<Record> recordSet, @NotNull final CacheHeaders cacheHeaders) {
     checkNotNull(recordSet, "recordSet == null");
     checkNotNull(cacheHeaders, "cacheHeaders == null");
 
+    if (cacheHeaders.hasHeader(ApolloCacheHeaders.DO_NOT_STORE)) {
+      return Collections.emptySet();
+    }
+
     //noinspection ResultOfMethodCallIgnored
     Set<String> nextCacheChangedKeys = nextCache().map(new Function<NormalizedCache, Set<String>>() {
-      @Nonnull @Override public Set<String> apply(@Nonnull NormalizedCache cache) {
+      @NotNull @Override public Set<String> apply(@NotNull NormalizedCache cache) {
         return cache.merge(recordSet, cacheHeaders);
       }
     }).or(Collections.<String>emptySet());
@@ -120,8 +125,8 @@ public abstract class NormalizedCache {
     return changedKeys;
   }
 
-  @Nonnull
-  protected abstract Set<String> performMerge(@Nonnull Record apolloRecord, @Nonnull CacheHeaders cacheHeaders);
+  @NotNull
+  protected abstract Set<String> performMerge(@NotNull Record apolloRecord, @NotNull CacheHeaders cacheHeaders);
 
   /**
    * Clears all records from the cache.
@@ -136,9 +141,9 @@ public abstract class NormalizedCache {
    * @param cacheKey of record to be removed
    * @return {@code true} if record with such key was successfully removed, {@code false} otherwise
    */
-  public abstract boolean remove(@Nonnull CacheKey cacheKey);
+  public abstract boolean remove(@NotNull CacheKey cacheKey);
 
-  public final NormalizedCache chain(@Nonnull NormalizedCache cache) {
+  public final NormalizedCache chain(@NotNull NormalizedCache cache) {
     checkNotNull(cache, "cache == null");
 
     NormalizedCache leafCache = this;
@@ -152,5 +157,50 @@ public abstract class NormalizedCache {
 
   public final Optional<NormalizedCache> nextCache() {
     return nextCache;
+  }
+
+  public Map<Class, Map<String, Record>> dump() {
+    Class clazz = this.getClass();
+    return Collections.singletonMap(clazz, Collections.<String, Record>emptyMap());
+  }
+
+  public static String prettifyDump(Map<Class, Map<String, Record>> dump) {
+    StringBuilder builder = new StringBuilder();
+    for (Map.Entry<Class, Map<String, Record>> dumpEntry : dump.entrySet()) {
+      builder.append(dumpEntry.getKey().getSimpleName())
+          .append(" {");
+      for (Map.Entry<String, Record> recordEntry : dumpEntry.getValue().entrySet()) {
+        builder
+            .append("\n  \"")
+            .append(recordEntry.getKey())
+            .append("\" : {");
+        for (Map.Entry<String, Object> fieldEntry : recordEntry.getValue().fields().entrySet()) {
+          builder
+              .append("\n    \"")
+              .append(fieldEntry.getKey())
+              .append("\" : ");
+          if (fieldEntry.getValue() instanceof CacheReference) {
+            builder.append("CacheRecordRef(")
+                .append(fieldEntry.getValue())
+                .append(")");
+          } else if (fieldEntry.getValue() instanceof List) {
+            builder.append("[");
+            for (Object item : (List) fieldEntry.getValue()) {
+              builder
+                  .append("\n      ")
+                  .append(item instanceof CacheReference ? "CacheRecordRef(" : "")
+                  .append(item)
+                  .append(item instanceof CacheReference ? ")" : "");
+            }
+            builder.append("\n    ]");
+          } else {
+            builder.append(fieldEntry.getValue());
+          }
+        }
+        builder.append("\n  }\n");
+      }
+      builder.append("}\n");
+    }
+    return builder.toString();
   }
 }

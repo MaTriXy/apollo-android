@@ -5,11 +5,14 @@ import com.google.common.io.CharStreams;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.rx2.Rx2Apollo;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,7 +25,6 @@ import static com.apollographql.apollo.fetcher.ApolloResponseFetchers.CACHE_ONLY
 import static com.apollographql.apollo.fetcher.ApolloResponseFetchers.NETWORK_ONLY;
 
 public final class Utils {
-  public static final long TIME_OUT_SECONDS = 3;
 
   private Utils() {
   }
@@ -58,7 +60,6 @@ public final class Utils {
   public static <T> void assertResponse(ApolloCall<T> call, Predicate<Response<T>> predicate) {
     Rx2Apollo.from(call)
         .test()
-        .awaitDone(TIME_OUT_SECONDS, TimeUnit.SECONDS)
         .assertValue(predicate);
   }
 
@@ -84,5 +85,48 @@ public final class Utils {
         call.clone().responseFetcher(CACHE_ONLY),
         predicate
     );
+  }
+
+  public static ExecutorService immediateExecutorService() {
+    return new AbstractExecutorService() {
+      @Override public void shutdown() {
+
+      }
+
+      @Override public List<Runnable> shutdownNow() {
+        return null;
+      }
+
+      @Override public boolean isShutdown() {
+        return false;
+      }
+
+      @Override public boolean isTerminated() {
+        return false;
+      }
+
+      @Override public boolean awaitTermination(long l, TimeUnit timeUnit) throws InterruptedException {
+        return false;
+      }
+
+      @Override public void execute(Runnable runnable) {
+        runnable.run();
+      }
+    };
+  }
+
+  public static class TestExecutor implements Executor {
+
+    private ConcurrentLinkedQueue<Runnable> commands = new ConcurrentLinkedQueue<>();
+
+    @Override public void execute(@NotNull Runnable command) {
+      commands.add(command);
+    }
+
+    public void triggerActions() {
+      for (Runnable command : commands) {
+        command.run();
+      }
+    }
   }
 }

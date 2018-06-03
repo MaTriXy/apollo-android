@@ -11,35 +11,36 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 public final class OptimisticNormalizedCache extends NormalizedCache {
   private final Cache<String, RecordJournal> lruCache = CacheBuilder.newBuilder().build();
 
-  @Nullable @Override public Record loadRecord(@Nonnull final String key, @Nonnull final CacheHeaders cacheHeaders) {
+  @Nullable @Override public Record loadRecord(@NotNull final String key, @NotNull final CacheHeaders cacheHeaders) {
     checkNotNull(key, "key == null");
     checkNotNull(cacheHeaders, "cacheHeaders == null");
 
     try {
       final Optional<Record> nonOptimisticRecord = nextCache()
           .flatMap(new Function<NormalizedCache, Optional<Record>>() {
-            @Nonnull @Override public Optional<Record> apply(@Nonnull NormalizedCache cache) {
+            @NotNull @Override public Optional<Record> apply(@NotNull NormalizedCache cache) {
               return Optional.fromNullable(cache.loadRecord(key, cacheHeaders));
             }
           });
       final RecordJournal journal = lruCache.getIfPresent(key);
       if (journal != null) {
         return nonOptimisticRecord.map(new Function<Record, Record>() {
-          @Nonnull @Override public Record apply(@Nonnull Record record) {
+          @NotNull @Override public Record apply(@NotNull Record record) {
             Record result = record.clone();
             result.mergeWith(journal.snapshot);
             return result;
@@ -58,17 +59,17 @@ public final class OptimisticNormalizedCache extends NormalizedCache {
     lruCache.invalidateAll();
     //noinspection ResultOfMethodCallIgnored
     nextCache().apply(new Action<NormalizedCache>() {
-      @Override public void apply(@Nonnull NormalizedCache cache) {
+      @Override public void apply(@NotNull NormalizedCache cache) {
         cache.clearAll();
       }
     });
   }
 
-  @Override public boolean remove(@Nonnull final CacheKey cacheKey) {
+  @Override public boolean remove(@NotNull final CacheKey cacheKey) {
     checkNotNull(cacheKey, "cacheKey == null");
 
     boolean result = nextCache().map(new Function<NormalizedCache, Boolean>() {
-      @Nonnull @Override public Boolean apply(@Nonnull NormalizedCache cache) {
+      @NotNull @Override public Boolean apply(@NotNull NormalizedCache cache) {
         return cache.remove(cacheKey);
       }
     }).or(Boolean.FALSE);
@@ -81,7 +82,7 @@ public final class OptimisticNormalizedCache extends NormalizedCache {
     return result;
   }
 
-  @Nonnull public Set<String> mergeOptimisticUpdates(@Nonnull Collection<Record> recordSet) {
+  @NotNull public Set<String> mergeOptimisticUpdates(@NotNull Collection<Record> recordSet) {
     Set<String> aggregatedDependentKeys = new LinkedHashSet<>();
     for (Record record : recordSet) {
       aggregatedDependentKeys.addAll(mergeOptimisticUpdate(record));
@@ -89,7 +90,7 @@ public final class OptimisticNormalizedCache extends NormalizedCache {
     return aggregatedDependentKeys;
   }
 
-  @Nonnull public Set<String> mergeOptimisticUpdate(@Nonnull final Record record) {
+  @NotNull public Set<String> mergeOptimisticUpdate(@NotNull final Record record) {
     checkNotNull(record, "record == null");
 
     final RecordJournal journal = lruCache.getIfPresent(record.key());
@@ -101,7 +102,7 @@ public final class OptimisticNormalizedCache extends NormalizedCache {
     }
   }
 
-  @Nonnull public Set<String> removeOptimisticUpdates(@Nonnull final UUID mutationId) {
+  @NotNull public Set<String> removeOptimisticUpdates(@NotNull final UUID mutationId) {
     checkNotNull(mutationId, "mutationId == null");
 
     Set<String> changedCacheKeys = new HashSet<>();
@@ -119,9 +120,23 @@ public final class OptimisticNormalizedCache extends NormalizedCache {
     return changedCacheKeys;
   }
 
-  @Nonnull @Override
-  protected Set<String> performMerge(@Nonnull Record apolloRecord, @Nonnull CacheHeaders cacheHeaders) {
+  @NotNull @Override
+  protected Set<String> performMerge(@NotNull Record apolloRecord, @NotNull CacheHeaders cacheHeaders) {
     return Collections.emptySet();
+  }
+
+  @Override public Map<Class, Map<String, Record>> dump() {
+    Map<String, Record> records = new LinkedHashMap<>();
+    for (Map.Entry<String, RecordJournal> entry : lruCache.asMap().entrySet()) {
+      records.put(entry.getKey(), entry.getValue().snapshot);
+    }
+
+    Map<Class, Map<String, Record>> dump = new LinkedHashMap<>();
+    dump.put(this.getClass(), Collections.unmodifiableMap(records));
+    if (nextCache().isPresent()) {
+      dump.putAll(nextCache().get().dump());
+    }
+    return dump;
   }
 
   private static final class RecordJournal {

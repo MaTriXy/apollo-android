@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
@@ -36,6 +36,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    height(unit: FOOT)\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "4905a0fccc07f97ecd6d660f5a68d4d49ffedc3f4688b76d17288dec1a1fdf93";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -48,14 +50,14 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(@Nonnull Input<Episode> episode, long stars, double greenValue) {
+  public TestQuery(@NotNull Input<Episode> episode, int stars, double greenValue) {
     Utils.checkNotNull(episode, "episode == null");
     variables = new TestQuery.Variables(episode, stars, greenValue);
   }
 
   @Override
   public String operationId() {
-    return "4905a0fccc07f97ecd6d660f5a68d4d49ffedc3f4688b76d17288dec1a1fdf93";
+    return OPERATION_ID;
   }
 
   @Override
@@ -90,7 +92,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static final class Builder {
     private Input<Episode> episode = Input.absent();
 
-    private long stars;
+    private int stars;
 
     private double greenValue;
 
@@ -102,7 +104,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this;
     }
 
-    public Builder stars(long stars) {
+    public Builder stars(int stars) {
       this.stars = stars;
       return this;
     }
@@ -112,7 +114,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this;
     }
 
-    public Builder episodeInput(@Nonnull Input<Episode> episode) {
+    public Builder episodeInput(@NotNull Input<Episode> episode) {
       this.episode = Utils.checkNotNull(episode, "episode == null");
       return this;
     }
@@ -125,13 +127,13 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static final class Variables extends Operation.Variables {
     private final Input<Episode> episode;
 
-    private final long stars;
+    private final int stars;
 
     private final double greenValue;
 
     private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
-    Variables(Input<Episode> episode, long stars, double greenValue) {
+    Variables(Input<Episode> episode, int stars, double greenValue) {
       this.episode = episode;
       this.stars = stars;
       this.greenValue = greenValue;
@@ -146,7 +148,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return episode;
     }
 
-    public long stars() {
+    public int stars() {
       return stars;
     }
 
@@ -165,9 +167,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         @Override
         public void marshal(InputFieldWriter writer) throws IOException {
           if (episode.defined) {
-            writer.writeString("episode", episode.value != null ? episode.value.name() : null);
+            writer.writeString("episode", episode.value != null ? episode.value.rawValue() : null);
           }
-          writer.writeLong("stars", stars);
+          writer.writeInt("stars", stars);
           writer.writeDouble("greenValue", greenValue);
         }
       };
@@ -177,23 +179,23 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static class Data implements Operation.Data {
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("heroWithReview", "heroWithReview", new UnmodifiableMapBuilder<String, Object>(2)
-        .put("review", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("stars", new UnmodifiableMapBuilder<String, Object>(2)
-            .put("kind", "Variable")
-            .put("variableName", "stars")
-          .build())
-          .put("favoriteColor", new UnmodifiableMapBuilder<String, Object>(3)
-            .put("red", "0.0")
-            .put("green", new UnmodifiableMapBuilder<String, Object>(2)
-              .put("kind", "Variable")
-              .put("variableName", "greenValue")
-            .build())
-            .put("blue", "0.0")
-          .build())
+      .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "episode")
         .build())
-        .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
+      .put("review", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("stars", new UnmodifiableMapBuilder<String, Object>(2)
           .put("kind", "Variable")
-          .put("variableName", "episode")
+          .put("variableName", "stars")
+          .build())
+        .put("favoriteColor", new UnmodifiableMapBuilder<String, Object>(3)
+          .put("red", "0.0")
+          .put("green", new UnmodifiableMapBuilder<String, Object>(2)
+            .put("kind", "Variable")
+            .put("variableName", "greenValue")
+            .build())
+          .put("blue", "0.0")
+          .build())
         .build())
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
@@ -278,13 +280,13 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forDouble("height", "height", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("unit", "FOOT")
+      .put("unit", "FOOT")
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<Double> height;
 
@@ -294,21 +296,21 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public HeroWithReview(@Nonnull String __typename, @Nonnull String name,
+    public HeroWithReview(@NotNull String __typename, @NotNull String name,
         @Nullable Double height) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.height = Optional.fromNullable(height);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * What this human calls themselves
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 

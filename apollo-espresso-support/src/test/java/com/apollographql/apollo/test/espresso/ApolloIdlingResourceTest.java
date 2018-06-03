@@ -15,6 +15,7 @@ import com.apollographql.apollo.rx2.Rx2Apollo;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
@@ -38,7 +39,7 @@ import static org.junit.Assert.fail;
 public class ApolloIdlingResourceTest {
   private ApolloIdlingResource idlingResource;
   private ApolloClient apolloClient;
-  private MockWebServer server;
+  @Rule public final MockWebServer server = new MockWebServer();
   private OkHttpClient okHttpClient;
 
   private static final long TIME_OUT_SECONDS = 3;
@@ -72,18 +73,17 @@ public class ApolloIdlingResourceTest {
       return data;
     }
 
-    @Nonnull @Override public OperationName name() {
+    @NotNull @Override public OperationName name() {
       return operationName;
     }
 
-    @Nonnull @Override public String operationId() {
+    @NotNull @Override public String operationId() {
       return "";
     }
   };
 
   @Before
   public void setup() {
-    server = new MockWebServer();
     okHttpClient = new OkHttpClient.Builder()
         .build();
   }
@@ -91,10 +91,6 @@ public class ApolloIdlingResourceTest {
   @After
   public void tearDown() {
     idlingResource = null;
-    try {
-      server.shutdown();
-    } catch (IOException ignored) {
-    }
   }
 
   @Test
@@ -154,11 +150,11 @@ public class ApolloIdlingResourceTest {
     assertThat(idlingResource.isIdleNow()).isTrue();
 
     apolloClient.query(EMPTY_QUERY).enqueue(new ApolloCall.Callback<Object>() {
-      @Override public void onResponse(@Nonnull Response<Object> response) {
+      @Override public void onResponse(@NotNull Response<Object> response) {
         latch.countDown();
       }
 
-      @Override public void onFailure(@Nonnull ApolloException e) {
+      @Override public void onFailure(@NotNull ApolloException e) {
         throw new AssertionError("This callback can't be called.");
       }
     });

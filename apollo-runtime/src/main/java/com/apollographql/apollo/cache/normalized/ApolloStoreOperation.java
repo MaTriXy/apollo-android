@@ -6,7 +6,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Apollo store operation to be performed.
@@ -111,7 +111,7 @@ public abstract class ApolloStoreOperation<T> {
    *
    * @param <T> result type
    */
-  interface Callback<T> {
+  public interface Callback<T> {
 
     void onSuccess(T result);
 

@@ -11,7 +11,7 @@
 					"type": "Episode"
 				}
 			],
-			"source": "query TestQuery($episode: Episode) {\n  hero(episode: $episode) {\n    __typename\n    name\n    deprecated\n  }\n}",
+			"source": "query TestQuery($episode: Episode) {\n  hero(episode: $episode) {\n    __typename\n    name\n    deprecated\n    deprecatedBool\n  }\n}",
 			"fields": [
 				{
 					"responseName": "hero",
@@ -23,7 +23,8 @@
 							"value": {
 								"kind": "Variable",
 								"variableName": "episode"
-							}
+							},
+							"type": "Episode"
 						}
 					],
 					"isConditional": false,
@@ -53,6 +54,15 @@
 							"description": "Test deprecated field",
 							"isDeprecated": true,
 							"deprecationReason": "For test purpose only"
+						},
+						{
+							"responseName": "deprecatedBool",
+							"fieldName": "deprecatedBool",
+							"type": "Boolean!",
+							"isConditional": false,
+							"description": "Test deprecated field",
+							"isDeprecated": true,
+							"deprecationReason": "For test purpose only"
 						}
 					],
 					"fragmentSpreads": [],
@@ -62,8 +72,8 @@
 			"fragmentSpreads": [],
 			"inlineFragments": [],
 			"fragmentsReferenced": [],
-			"sourceWithFragments": "query TestQuery($episode: Episode) {\n  hero(episode: $episode) {\n    __typename\n    name\n    deprecated\n  }\n}",
-			"operationId": "c86775f24ab7d183b6c219a6df0eba15f39b9efb6ca5ef235e3142c11b447fcd"
+			"sourceWithFragments": "query TestQuery($episode: Episode) {\n  hero(episode: $episode) {\n    __typename\n    name\n    deprecated\n    deprecatedBool\n  }\n}",
+			"operationId": "d62c8a7f6b24719252b8516389ca97a605b57cdebbbc523f4644847c5bf4efed"
 		}
 	],
 	"fragments": [],
@@ -94,6 +104,12 @@
 				{
 					"name": "DEPRECATED",
 					"description": "Test deprecated enum value",
+					"isDeprecated": true,
+					"deprecationReason": "For test purpose only"
+				},
+				{
+					"name": "new",
+					"description": "Test java reserved word",
 					"isDeprecated": true,
 					"deprecationReason": "For test purpose only"
 				}

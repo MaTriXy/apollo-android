@@ -27,14 +27,16 @@
 							"value": {
 								"kind": "Variable",
 								"variableName": "ep"
-							}
+							},
+							"type": "Episode"
 						},
 						{
 							"name": "review",
 							"value": {
 								"kind": "Variable",
 								"variableName": "review"
-							}
+							},
+							"type": "ReviewInput!"
 						}
 					],
 					"isConditional": false,
@@ -105,6 +107,12 @@
 				{
 					"name": "DEPRECATED",
 					"description": "Test deprecated enum value",
+					"isDeprecated": true,
+					"deprecationReason": "For test purpose only"
+				},
+				{
+					"name": "new",
+					"description": "Test java reserved word",
 					"isDeprecated": true,
 					"deprecationReason": "For test purpose only"
 				}
@@ -192,6 +200,26 @@
 					"type": "Boolean",
 					"description": "for test purpose only",
 					"defaultValue": true
+				},
+				{
+					"name": "listOfListOfString",
+					"type": "[[String]]",
+					"description": "for test purpose only"
+				},
+				{
+					"name": "listOfListOfEnum",
+					"type": "[[Episode]]",
+					"description": "for test purpose only"
+				},
+				{
+					"name": "listOfListOfCustom",
+					"type": "[[Date]]",
+					"description": "for test purpose only"
+				},
+				{
+					"name": "listOfListOfObject",
+					"type": "[[ColorInput]]",
+					"description": "for test purpose only"
 				}
 			]
 		},

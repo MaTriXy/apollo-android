@@ -1,6 +1,6 @@
 package com.apollographql.apollo.api;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * An immutable object that wraps reference to another object. Reference can be in two states: <i>defined</i> means
@@ -51,5 +51,20 @@ public final class Input<V> {
    */
   public static <V> Input<V> absent() {
     return new Input<>(null, false);
+  }
+
+  @Override public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Input)) return false;
+
+    Input<?> input = (Input<?>) o;
+
+    return defined == input.defined && value != null && value.equals(input.value);
+  }
+
+  @Override public int hashCode() {
+    int result = value != null ? value.hashCode() : 0;
+    result = 31 * result + (defined ? 1 : 0);
+    return result;
   }
 }

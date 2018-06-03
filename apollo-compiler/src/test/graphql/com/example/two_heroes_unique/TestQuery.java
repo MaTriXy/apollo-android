@@ -17,8 +17,8 @@ import java.lang.Override;
 import java.lang.String;
 import java.util.Collections;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
@@ -33,6 +33,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    name\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "922160ff4bcf150d3b4a84e8b4d218dde7ff83f6a98145fc9d5237b54eb89e6d";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -51,7 +53,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   @Override
   public String operationId() {
-    return "922160ff4bcf150d3b4a84e8b4d218dde7ff83f6a98145fc9d5237b54eb89e6d";
+    return OPERATION_ID;
   }
 
   @Override
@@ -96,7 +98,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("r2", "hero", null, true, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forObject("luke", "hero", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("episode", "EMPIRE")
+      .put("episode", "EMPIRE")
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
 
@@ -201,9 +203,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     private volatile String $toString;
 
@@ -211,19 +213,19 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public R2(@Nonnull String __typename, @Nonnull String name) {
+    public R2(@NotNull String __typename, @NotNull String name) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The name of the character
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 
@@ -292,11 +294,11 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String id;
+    final @NotNull String id;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     private volatile String $toString;
 
@@ -304,27 +306,27 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public Luke(@Nonnull String __typename, @Nonnull String id, @Nonnull String name) {
+    public Luke(@NotNull String __typename, @NotNull String id, @NotNull String name) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.id = Utils.checkNotNull(id, "id == null");
       this.name = Utils.checkNotNull(name, "name == null");
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The ID of the character
      */
-    public @Nonnull String id() {
+    public @NotNull String id() {
       return this.id;
     }
 
     /**
      * The name of the character
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 

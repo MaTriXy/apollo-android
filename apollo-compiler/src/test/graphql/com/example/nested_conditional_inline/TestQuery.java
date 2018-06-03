@@ -26,8 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, TestQuery.Variables> {
@@ -36,29 +36,27 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    __typename\n"
       + "    name\n"
       + "    ... on Human {\n"
-      + "      __typename\n"
       + "      friends {\n"
       + "        __typename\n"
       + "        name\n"
       + "        ... on Human {\n"
-      + "          __typename\n"
       + "          height(unit: FOOT)\n"
       + "        }\n"
       + "      }\n"
       + "    }\n"
       + "    ... on Droid {\n"
-      + "      __typename\n"
       + "      friends {\n"
       + "        __typename\n"
       + "        name\n"
       + "        ... on Human {\n"
-      + "          __typename\n"
       + "          height(unit: METER)\n"
       + "        }\n"
       + "      }\n"
       + "    }\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "071e064b3415e8b92bed3befa46bf04501c7194cde77ede0ebf50429624796cc";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -71,14 +69,14 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   private final TestQuery.Variables variables;
 
-  public TestQuery(@Nonnull Input<Episode> episode) {
+  public TestQuery(@NotNull Input<Episode> episode) {
     Utils.checkNotNull(episode, "episode == null");
     variables = new TestQuery.Variables(episode);
   }
 
   @Override
   public String operationId() {
-    return null;
+    return OPERATION_ID;
   }
 
   @Override
@@ -121,7 +119,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this;
     }
 
-    public Builder episodeInput(@Nonnull Input<Episode> episode) {
+    public Builder episodeInput(@NotNull Input<Episode> episode) {
       this.episode = Utils.checkNotNull(episode, "episode == null");
       return this;
     }
@@ -158,7 +156,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         @Override
         public void marshal(InputFieldWriter writer) throws IOException {
           if (episode.defined) {
-            writer.writeString("episode", episode.value != null ? episode.value.name() : null);
+            writer.writeString("episode", episode.value != null ? episode.value.rawValue() : null);
           }
         }
       };
@@ -168,9 +166,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   public static class Data implements Operation.Data {
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("hero", "hero", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("kind", "Variable")
-          .put("variableName", "episode")
+      .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "episode")
         .build())
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
@@ -251,9 +249,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public interface Hero {
-    @Nonnull String __typename();
+    @NotNull String __typename();
 
-    @Nonnull String name();
+    /**
+     * The name of the character
+     */
+    @NotNull String name();
 
     ResponseFieldMarshaller marshaller();
 
@@ -294,9 +295,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forList("friends", "friends", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<List<Friend>> friends;
 
@@ -306,21 +307,27 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsHuman(@Nonnull String __typename, @Nonnull String name,
+    public AsHuman(@NotNull String __typename, @NotNull String name,
         @Nullable List<Friend> friends) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.friends = Optional.fromNullable(friends);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
-    public @Nonnull String name() {
+    /**
+     * What this human calls themselves
+     */
+    public @NotNull String name() {
       return this.name;
     }
 
+    /**
+     * This human's friends, or an empty list if they have none
+     */
     public Optional<List<Friend>> friends() {
       return this.friends;
     }
@@ -407,9 +414,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public interface Friend {
-    @Nonnull String __typename();
+    @NotNull String __typename();
 
-    @Nonnull String name();
+    /**
+     * The name of the character
+     */
+    @NotNull String name();
 
     ResponseFieldMarshaller marshaller();
 
@@ -437,13 +447,13 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forDouble("height", "height", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("unit", "FOOT")
+      .put("unit", "FOOT")
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<Double> height;
 
@@ -453,20 +463,26 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsHuman1(@Nonnull String __typename, @Nonnull String name, @Nullable Double height) {
+    public AsHuman1(@NotNull String __typename, @NotNull String name, @Nullable Double height) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.height = Optional.fromNullable(height);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
-    public @Nonnull String name() {
+    /**
+     * What this human calls themselves
+     */
+    public @NotNull String name() {
       return this.name;
     }
 
+    /**
+     * Height in the preferred unit, default is meters
+     */
     public Optional<Double> height() {
       return this.height;
     }
@@ -542,9 +558,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forList("friends", "friends", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<List<Friend1>> friends;
 
@@ -554,21 +570,27 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsDroid(@Nonnull String __typename, @Nonnull String name,
+    public AsDroid(@NotNull String __typename, @NotNull String name,
         @Nullable List<Friend1> friends) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.friends = Optional.fromNullable(friends);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
-    public @Nonnull String name() {
+    /**
+     * What others call this droid
+     */
+    public @NotNull String name() {
       return this.name;
     }
 
+    /**
+     * This droid's friends, or an empty list if they have none
+     */
     public Optional<List<Friend1>> friends() {
       return this.friends;
     }
@@ -655,9 +677,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public interface Friend1 {
-    @Nonnull String __typename();
+    @NotNull String __typename();
 
-    @Nonnull String name();
+    /**
+     * The name of the character
+     */
+    @NotNull String name();
 
     ResponseFieldMarshaller marshaller();
 
@@ -685,13 +710,13 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("name", "name", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forDouble("height", "height", new UnmodifiableMapBuilder<String, Object>(1)
-        .put("unit", "METER")
+      .put("unit", "METER")
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<Double> height;
 
@@ -701,20 +726,26 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsHuman2(@Nonnull String __typename, @Nonnull String name, @Nullable Double height) {
+    public AsHuman2(@NotNull String __typename, @NotNull String name, @Nullable Double height) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.height = Optional.fromNullable(height);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
-    public @Nonnull String name() {
+    /**
+     * What this human calls themselves
+     */
+    public @NotNull String name() {
       return this.name;
     }
 
+    /**
+     * Height in the preferred unit, default is meters
+     */
     public Optional<Double> height() {
       return this.height;
     }

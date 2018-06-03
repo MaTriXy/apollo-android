@@ -16,6 +16,9 @@ fun String.escapeJavaReservedWord() = if (JAVA_RESERVED_WORDS.contains(this)) "$
 
 fun String.toJavaBeansSemanticNaming(isBooleanField: Boolean): String {
   val prefix = if (isBooleanField) "is" else "get"
+  if (isBooleanField && startsWith(prefix) && removePrefix(prefix) == removePrefix(prefix).capitalize()) {
+    return this
+  }
   return "$prefix${capitalize()}"
 }
 
@@ -33,7 +36,7 @@ fun TypeName.overrideTypeName(typeNameOverrideMap: Map<String, String>): TypeNam
 }
 
 fun FieldSpec.overrideType(typeNameOverrideMap: Map<String, String>): FieldSpec =
-    FieldSpec.builder(type.overrideTypeName(typeNameOverrideMap).annotated(type.annotations), name)
+    FieldSpec.builder(type.withoutAnnotations().overrideTypeName(typeNameOverrideMap).annotated(type.annotations), name)
         .addModifiers(*modifiers.toTypedArray())
         .addAnnotations(annotations)
         .addJavadoc(javadoc)
@@ -42,7 +45,9 @@ fun FieldSpec.overrideType(typeNameOverrideMap: Map<String, String>): FieldSpec 
 
 fun MethodSpec.overrideReturnType(typeNameOverrideMap: Map<String, String>): MethodSpec =
     MethodSpec.methodBuilder(name)
-        .returns(returnType.overrideTypeName(typeNameOverrideMap).annotated(returnType.annotations))
+        .returns(
+            returnType.withoutAnnotations().overrideTypeName(typeNameOverrideMap).annotated(returnType.annotations))
+        .addAnnotations(annotations)
         .addModifiers(*modifiers.toTypedArray())
         .addCode(code)
         .addJavadoc(javadoc)
@@ -192,9 +197,9 @@ fun TypeSpec.withHashCodeImplementation(): TypeSpec {
           .addStatement("h *= 1000003")
           .let {
             if (field.type.isPrimitive) {
-              if (field.type == TypeName.DOUBLE) {
+              if (field.type.withoutAnnotations() == TypeName.DOUBLE) {
                 it.addStatement("h ^= Double.valueOf(\$L).hashCode()", field.name)
-              } else if (field.type == TypeName.BOOLEAN) {
+              } else if (field.type.withoutAnnotations() == TypeName.BOOLEAN) {
                 it.addStatement("h ^= Boolean.valueOf(\$L).hashCode()", field.name)
               } else {
                 it.addStatement("h ^= \$L", field.name)
@@ -393,13 +398,25 @@ fun TypeName.isList() =
 fun TypeName.isEnum(context: CodeGenerationContext) =
     ((this is ClassName) && context.typeDeclarations.count { it.kind == "EnumType" && it.name == simpleName() } > 0)
 
-fun String.isCustomScalarType(context: CodeGenerationContext) =
-    context.customTypeMap.containsKey(normalizeGraphQlType(this))
+fun String.isCustomScalarType(context: CodeGenerationContext): Boolean {
+  val normalizedType = normalizeGraphQlType(this)
+  return if (this != normalizedType) {
+    normalizedType.isCustomScalarType(context)
+  } else {
+    context.customTypeMap.containsKey(normalizedType)
+  }
+}
 
 fun TypeName.isScalar(context: CodeGenerationContext) = (Util.SCALAR_TYPES.contains(this) || isEnum(context))
 
-fun normalizeGraphQlType(type: String) =
-    type.removeSuffix("!").removeSurrounding(prefix = "[", suffix = "]").removeSuffix("!")
+fun normalizeGraphQlType(type: String, recursive: Boolean = false): String {
+  val normalizedType = type.removeSuffix("!").removeSurrounding(prefix = "[", suffix = "]").removeSuffix("!")
+  return if (recursive && normalizedType != type) {
+    normalizeGraphQlType(normalizedType, true)
+  } else {
+    normalizedType
+  }
+}
 
 fun TypeName.listParamType(): TypeName {
   return (this as ParameterizedTypeName)
@@ -430,21 +447,23 @@ fun TypeSpec.confirmToProtocol(protocolSpec: TypeSpec): TypeSpec {
         }
       }.filter { (_, nestedProtocol) -> nestedProtocol != null }
 
-  return TypeSpec.classBuilder(name)
-      .superclass(superclass)
+  val classBuilder = (kind != TypeSpec.Kind.INTERFACE)
+  val typeSpec = if (classBuilder) TypeSpec.classBuilder(name) else TypeSpec.interfaceBuilder(name)
+  return typeSpec
+      .also { if (classBuilder) it.superclass(superclass) }
       .addJavadoc(javadoc)
       .addAnnotations(annotations)
       .addModifiers(*modifiers.toTypedArray())
       .addSuperinterfaces(superinterfaces)
       .addSuperinterface(ClassName.get("", protocolSpec.name))
-      .addFields(fieldSpecs)
+      .also { if (classBuilder) it.addFields(fieldSpecs) }
+      .addMethods(methodSpecs)
       .addTypes(typeSpecs.map { typeSpec ->
         val protocol = nestedTypeProtocols[typeSpec.name]
         protocol?.let { typeSpec.confirmToProtocol(it) } ?: typeSpec
       })
-      .addMethods(methodSpecs)
-      .let { if (initializerBlock.isEmpty) it else it.addInitializerBlock(initializerBlock) }
-      .let { if (staticBlock.isEmpty) it else it.addStaticBlock(staticBlock) }
+      .also { if (!staticBlock.isEmpty) it.addStaticBlock(staticBlock) }
+      .also { if (classBuilder && !initializerBlock.isEmpty) it.addInitializerBlock(initializerBlock) }
       .build()
 }
 
@@ -460,6 +479,18 @@ fun MethodSpec.withWildCardReturnType(forTypeNames: List<String>): MethodSpec {
     return toBuilder()
         .returns(returnType.let { (it as? ParameterizedTypeName)?.overrideWithWildcard() ?: it })
         .build()
+  } else {
+    this
+  }
+}
+
+fun Number.castTo(type: TypeName): Number {
+  return if (type == TypeName.INT || type == TypeName.INT.box()) {
+    toInt()
+  } else if (type == TypeName.LONG || type == TypeName.LONG.box()) {
+    toLong()
+  } else if (type == TypeName.FLOAT || type == TypeName.FLOAT.box()) {
+    toDouble()
   } else {
     this
   }

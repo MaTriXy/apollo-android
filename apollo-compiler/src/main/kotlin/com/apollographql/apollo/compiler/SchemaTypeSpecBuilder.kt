@@ -115,7 +115,7 @@ class SchemaTypeSpecBuilder(
   }
 
   private fun inlineFragmentsTypeSpecs(): List<Pair<String, TypeSpec>> =
-      inlineFragments.map { it.formatClassName() to it.toTypeSpec(context = context, abstract = abstract) }
+      inlineFragments.map { it.formatClassName() to it.toTypeSpec(context = context, abstract = false) }
 
   private fun fragmentsAccessorMethodSpec(): MethodSpec {
     val fragmentsName = FRAGMENTS_FIELD.name
@@ -143,8 +143,8 @@ class SchemaTypeSpecBuilder(
 
     fun isOptional(fragmentName: String): Boolean {
       return context.ir.fragments
-          .find { it.fragmentName == fragmentName }
-          ?.let { it.typeCondition != normalizeGraphQlType(schemaType) } ?: true
+          .first { it.fragmentName == fragmentName }
+          .let { it.inlineFragments.isNotEmpty() || it.typeCondition != normalizeGraphQlType(schemaType) }
     }
 
     fun fragmentFields(): List<FieldSpec> {

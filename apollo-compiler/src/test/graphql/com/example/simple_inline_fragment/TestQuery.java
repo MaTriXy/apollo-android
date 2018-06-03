@@ -17,8 +17,8 @@ import java.lang.String;
 import java.util.Arrays;
 import java.util.Collections;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
@@ -34,6 +34,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       + "    }\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "212ff92146147cf94d8e05687d2660c3ead0b054e92d86a52e24eb15880c6dfd";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -52,7 +54,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   @Override
   public String operationId() {
-    return "212ff92146147cf94d8e05687d2660c3ead0b054e92d86a52e24eb15880c6dfd";
+    return OPERATION_ID;
   }
 
   @Override
@@ -174,12 +176,12 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
   }
 
   public interface Hero {
-    @Nonnull String __typename();
+    @NotNull String __typename();
 
     /**
      * The name of the character
      */
-    @Nonnull String name();
+    @NotNull String name();
 
     ResponseFieldMarshaller marshaller();
 
@@ -220,9 +222,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forDouble("height", "height", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<Double> height;
 
@@ -232,20 +234,20 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsHuman(@Nonnull String __typename, @Nonnull String name, @Nullable Double height) {
+    public AsHuman(@NotNull String __typename, @NotNull String name, @Nullable Double height) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.height = Optional.fromNullable(height);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * What this human calls themselves
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 
@@ -327,9 +329,9 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("primaryFunction", "primaryFunction", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final @Nonnull String name;
+    final @NotNull String name;
 
     final Optional<String> primaryFunction;
 
@@ -339,21 +341,21 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public AsDroid(@Nonnull String __typename, @Nonnull String name,
+    public AsDroid(@NotNull String __typename, @NotNull String name,
         @Nullable String primaryFunction) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.name = Utils.checkNotNull(name, "name == null");
       this.primaryFunction = Optional.fromNullable(primaryFunction);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * What others call this droid
      */
-    public @Nonnull String name() {
+    public @NotNull String name() {
       return this.name;
     }
 

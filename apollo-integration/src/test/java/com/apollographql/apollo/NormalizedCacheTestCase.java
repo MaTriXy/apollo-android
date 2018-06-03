@@ -4,6 +4,8 @@ import com.apollographql.apollo.api.Input;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.cache.normalized.CacheKey;
+import com.apollographql.apollo.cache.normalized.NormalizedCache;
+import com.apollographql.apollo.cache.normalized.Record;
 import com.apollographql.apollo.cache.normalized.lru.EvictionPolicy;
 import com.apollographql.apollo.cache.normalized.lru.LruNormalizedCacheFactory;
 import com.apollographql.apollo.integration.httpcache.AllPlanetsQuery;
@@ -23,14 +25,15 @@ import com.apollographql.apollo.integration.normalizer.fragment.HeroWithFriendsF
 import com.apollographql.apollo.integration.normalizer.fragment.HumanWithIdFragment;
 import com.apollographql.apollo.integration.normalizer.type.Episode;
 
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.functions.Predicate;
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -47,14 +50,13 @@ import static java.util.Arrays.asList;
 
 public class NormalizedCacheTestCase {
   private ApolloClient apolloClient;
-  private MockWebServer server;
+  @Rule public final MockWebServer server = new MockWebServer();
 
   @Before public void setUp() {
-    server = new MockWebServer();
-
     OkHttpClient okHttpClient = new OkHttpClient.Builder()
         .writeTimeout(2, TimeUnit.SECONDS)
         .readTimeout(2, TimeUnit.SECONDS)
+        .dispatcher(new Dispatcher(Utils.immediateExecutorService()))
         .build();
 
     apolloClient = ApolloClient.builder()
@@ -63,13 +65,6 @@ public class NormalizedCacheTestCase {
         .normalizedCache(new LruNormalizedCacheFactory(EvictionPolicy.NO_EVICTION), new IdFieldCacheKeyResolver())
         .dispatcher(Utils.immediateExecutor())
         .build();
-  }
-
-  @After public void tearDown() {
-    try {
-      server.shutdown();
-    } catch (IOException ignored) {
-    }
   }
 
   @Test public void episodeHeroName() throws Exception {
@@ -771,5 +766,55 @@ public class NormalizedCacheTestCase {
           }
         }
     );
+  }
+
+  @Test public void dump() throws Exception {
+    enqueueAndAssertResponse(
+        server,
+        "HeroAndFriendsNameWithIdsResponse.json",
+        apolloClient.query(new HeroAndFriendsNamesWithIDsQuery(Input.fromNullable(Episode.NEWHOPE)))
+            .responseFetcher(NETWORK_ONLY), new Predicate<Response<HeroAndFriendsNamesWithIDsQuery.Data>>() {
+          @Override public boolean test(Response<HeroAndFriendsNamesWithIDsQuery.Data> response) throws Exception {
+            return !response.hasErrors();
+          }
+        }
+    );
+
+    Map<Class, Map<String, Record>> dump = apolloClient.apolloStore().normalizedCache().dump();
+    assertThat(NormalizedCache.prettifyDump(dump)).isEqualTo("OptimisticNormalizedCache {}\n" +
+        "LruNormalizedCache {\n" +
+        "  \"1002\" : {\n" +
+        "    \"__typename\" : Human\n" +
+        "    \"id\" : 1002\n" +
+        "    \"name\" : Han Solo\n" +
+        "  }\n" +
+        "\n" +
+        "  \"QUERY_ROOT\" : {\n" +
+        "    \"hero({\"episode\":\"NEWHOPE\"})\" : CacheRecordRef(2001)\n" +
+        "  }\n" +
+        "\n" +
+        "  \"1003\" : {\n" +
+        "    \"__typename\" : Human\n" +
+        "    \"id\" : 1003\n" +
+        "    \"name\" : Leia Organa\n" +
+        "  }\n" +
+        "\n" +
+        "  \"1000\" : {\n" +
+        "    \"__typename\" : Human\n" +
+        "    \"id\" : 1000\n" +
+        "    \"name\" : Luke Skywalker\n" +
+        "  }\n" +
+        "\n" +
+        "  \"2001\" : {\n" +
+        "    \"__typename\" : Droid\n" +
+        "    \"id\" : 2001\n" +
+        "    \"name\" : R2-D2\n" +
+        "    \"friends\" : [\n" +
+        "      CacheRecordRef(1000)\n" +
+        "      CacheRecordRef(1002)\n" +
+        "      CacheRecordRef(1003)\n" +
+        "    ]\n" +
+        "  }\n" +
+        "}\n");
   }
 }

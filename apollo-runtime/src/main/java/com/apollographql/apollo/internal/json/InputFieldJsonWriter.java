@@ -1,16 +1,19 @@
 package com.apollographql.apollo.internal.json;
 
-import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.api.InputFieldMarshaller;
 import com.apollographql.apollo.api.InputFieldWriter;
 import com.apollographql.apollo.api.ScalarType;
+import com.apollographql.apollo.response.CustomTypeAdapter;
+import com.apollographql.apollo.response.CustomTypeValue;
 import com.apollographql.apollo.response.ScalarTypeAdapters;
 
 import java.io.IOException;
+import java.util.Map;
 
-import javax.annotation.Nonnull;
+import org.jetbrains.annotations.NotNull;
 
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
+import static com.apollographql.apollo.internal.json.Utils.writeToJson;
 
 public class InputFieldJsonWriter implements InputFieldWriter {
   private final JsonWriter jsonWriter;
@@ -21,7 +24,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     this.scalarTypeAdapters = scalarTypeAdapters;
   }
 
-  @Override public void writeString(@Nonnull String fieldName, String value) throws IOException {
+  @Override public void writeString(@NotNull String fieldName, String value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       jsonWriter.name(fieldName).value(value);
@@ -30,7 +33,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeInt(@Nonnull String fieldName, Integer value) throws IOException {
+  @Override public void writeInt(@NotNull String fieldName, Integer value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       jsonWriter.name(fieldName).value(value);
@@ -39,7 +42,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeLong(@Nonnull String fieldName, Long value) throws IOException {
+  @Override public void writeLong(@NotNull String fieldName, Long value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       jsonWriter.name(fieldName).value(value);
@@ -48,7 +51,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeDouble(@Nonnull String fieldName, Double value) throws IOException {
+  @Override public void writeDouble(@NotNull String fieldName, Double value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       jsonWriter.name(fieldName).value(value);
@@ -57,7 +60,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeBoolean(@Nonnull String fieldName, Boolean value) throws IOException {
+  @Override public void writeNumber(@NotNull String fieldName, Number value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       jsonWriter.name(fieldName).value(value);
@@ -66,17 +69,40 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeCustom(@Nonnull String fieldName, ScalarType scalarType, Object value) throws IOException {
+  @Override public void writeBoolean(@NotNull String fieldName, Boolean value) throws IOException {
+    checkNotNull(fieldName, "fieldName == null");
+    if (value != null) {
+      jsonWriter.name(fieldName).value(value);
+    } else {
+      jsonWriter.name(fieldName).nullValue();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override public void writeCustom(@NotNull String fieldName, ScalarType scalarType, Object value) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (value != null) {
       CustomTypeAdapter customTypeAdapter = scalarTypeAdapters.adapterFor(scalarType);
-      writeString(fieldName, customTypeAdapter.encode(value));
+      CustomTypeValue customTypeValue = customTypeAdapter.encode(value);
+      if (customTypeValue instanceof CustomTypeValue.GraphQLString) {
+        writeString(fieldName, ((CustomTypeValue.GraphQLString) customTypeValue).value);
+      } else if (customTypeValue instanceof CustomTypeValue.GraphQLBoolean) {
+        writeBoolean(fieldName, ((CustomTypeValue.GraphQLBoolean) customTypeValue).value);
+      } else if (customTypeValue instanceof CustomTypeValue.GraphQLNumber) {
+        writeNumber(fieldName, ((CustomTypeValue.GraphQLNumber) customTypeValue).value);
+      } else if (customTypeValue instanceof CustomTypeValue.GraphQLJsonString) {
+        writeString(fieldName, ((CustomTypeValue.GraphQLJsonString) customTypeValue).value);
+      } else if (customTypeValue instanceof CustomTypeValue.GraphQLJson) {
+        writeMap(fieldName, ((CustomTypeValue.GraphQLJson) customTypeValue).value);
+      } else {
+        throw new IllegalArgumentException("Unsupported custom value type: " + customTypeValue);
+      }
     } else {
-      writeString(fieldName, null);
+      jsonWriter.name(fieldName).nullValue();
     }
   }
 
-  @Override public void writeObject(@Nonnull String fieldName, InputFieldMarshaller marshaller) throws IOException {
+  @Override public void writeObject(@NotNull String fieldName, InputFieldMarshaller marshaller) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (marshaller != null) {
       jsonWriter.name(fieldName).beginObject();
@@ -87,7 +113,7 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
   }
 
-  @Override public void writeList(@Nonnull String fieldName, ListWriter listWriter) throws IOException {
+  @Override public void writeList(@NotNull String fieldName, ListWriter listWriter) throws IOException {
     checkNotNull(fieldName, "fieldName == null");
     if (listWriter != null) {
       jsonWriter.name(fieldName).beginArray();
@@ -95,6 +121,16 @@ public class InputFieldJsonWriter implements InputFieldWriter {
       jsonWriter.endArray();
     } else {
       jsonWriter.name(fieldName).nullValue();
+    }
+  }
+
+  @Override public void writeMap(@NotNull String fieldName, Map<String, Object> value) throws IOException {
+    checkNotNull(fieldName, "fieldName == null");
+    if (value == null) {
+      jsonWriter.name(fieldName).nullValue();
+    } else {
+      jsonWriter.name(fieldName);
+      writeToJson(value, jsonWriter);
     }
   }
 
@@ -108,47 +144,95 @@ public class InputFieldJsonWriter implements InputFieldWriter {
     }
 
     @Override public void writeString(String value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.value(value);
       }
     }
 
     @Override public void writeInt(Integer value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.value(value);
       }
     }
 
     @Override public void writeLong(Long value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.value(value);
       }
     }
 
     @Override public void writeDouble(Double value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
+        jsonWriter.value(value);
+      }
+    }
+
+    @Override public void writeNumber(Number value) throws IOException {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.value(value);
       }
     }
 
     @Override public void writeBoolean(Boolean value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.value(value);
       }
     }
 
+    @Override public void writeMap(Map<String, Object> value) throws IOException {
+      writeToJson(value, jsonWriter);
+    }
+
+    @SuppressWarnings("unchecked")
     @Override public void writeCustom(ScalarType scalarType, Object value) throws IOException {
-      if (value != null) {
+      if (value == null) {
+        jsonWriter.nullValue();
+      } else {
         CustomTypeAdapter customTypeAdapter = scalarTypeAdapters.adapterFor(scalarType);
-        writeString(customTypeAdapter.encode(value));
+        CustomTypeValue customTypeValue = customTypeAdapter.encode(value);
+        if (customTypeValue instanceof CustomTypeValue.GraphQLString) {
+          writeString(((CustomTypeValue.GraphQLString) customTypeValue).value);
+        } else if (customTypeValue instanceof CustomTypeValue.GraphQLBoolean) {
+          writeBoolean(((CustomTypeValue.GraphQLBoolean) customTypeValue).value);
+        } else if (customTypeValue instanceof CustomTypeValue.GraphQLNumber) {
+          writeNumber(((CustomTypeValue.GraphQLNumber) customTypeValue).value);
+        } else if (customTypeValue instanceof CustomTypeValue.GraphQLJsonString) {
+          writeString(((CustomTypeValue.GraphQLJsonString) customTypeValue).value);
+        } else if (customTypeValue instanceof CustomTypeValue.GraphQLJson) {
+          writeMap(((CustomTypeValue.GraphQLJson) customTypeValue).value);
+        } else {
+          throw new IllegalArgumentException("Unsupported custom value type: " + customTypeValue);
+        }
       }
     }
 
     @Override public void writeObject(InputFieldMarshaller marshaller) throws IOException {
-      if (marshaller != null) {
+      if (marshaller == null) {
+        jsonWriter.nullValue();
+      } else {
         jsonWriter.beginObject();
         marshaller.marshal(new InputFieldJsonWriter(jsonWriter, scalarTypeAdapters));
         jsonWriter.endObject();
+      }
+    }
+
+    @Override public void writeList(ListWriter listWriter) throws IOException {
+      if (listWriter == null) {
+        jsonWriter.nullValue();
+      } else {
+        listWriter.write(new JsonListItemWriter(jsonWriter, scalarTypeAdapters));
       }
     }
   }

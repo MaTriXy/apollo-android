@@ -6,14 +6,15 @@ import com.apollographql.apollo.api.InputFieldWriter;
 import com.apollographql.apollo.api.internal.Utils;
 import java.io.IOException;
 import java.lang.Double;
+import java.lang.Object;
 import java.lang.Override;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class ColorInput {
-  private final long red;
+  private final int red;
 
   private final Input<Double> green;
 
@@ -21,7 +22,11 @@ public final class ColorInput {
 
   private final Input<Episode> enumWithDefaultValue;
 
-  ColorInput(long red, Input<Double> green, double blue, Input<Episode> enumWithDefaultValue) {
+  private volatile int $hashCode;
+
+  private volatile boolean $hashCodeMemoized;
+
+  ColorInput(int red, Input<Double> green, double blue, Input<Episode> enumWithDefaultValue) {
     this.red = red;
     this.green = green;
     this.blue = blue;
@@ -31,7 +36,7 @@ public final class ColorInput {
   /**
    * Red color
    */
-  public long red() {
+  public int red() {
     return this.red;
   }
 
@@ -64,20 +69,53 @@ public final class ColorInput {
     return new InputFieldMarshaller() {
       @Override
       public void marshal(InputFieldWriter writer) throws IOException {
-        writer.writeLong("red", red);
+        writer.writeInt("red", red);
         if (green.defined) {
           writer.writeDouble("green", green.value);
         }
         writer.writeDouble("blue", blue);
         if (enumWithDefaultValue.defined) {
-          writer.writeString("enumWithDefaultValue", enumWithDefaultValue.value != null ? enumWithDefaultValue.value.name() : null);
+          writer.writeString("enumWithDefaultValue", enumWithDefaultValue.value != null ? enumWithDefaultValue.value.rawValue() : null);
         }
       }
     };
   }
 
+  @Override
+  public int hashCode() {
+    if (!$hashCodeMemoized) {
+      int h = 1;
+      h *= 1000003;
+      h ^= red;
+      h *= 1000003;
+      h ^= green.hashCode();
+      h *= 1000003;
+      h ^= Double.valueOf(blue).hashCode();
+      h *= 1000003;
+      h ^= enumWithDefaultValue.hashCode();
+      $hashCode = h;
+      $hashCodeMemoized = true;
+    }
+    return $hashCode;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) {
+      return true;
+    }
+    if (o instanceof ColorInput) {
+      ColorInput that = (ColorInput) o;
+      return this.red == that.red
+       && this.green.equals(that.green)
+       && Double.doubleToLongBits(this.blue) == Double.doubleToLongBits(that.blue)
+       && this.enumWithDefaultValue.equals(that.enumWithDefaultValue);
+    }
+    return false;
+  }
+
   public static final class Builder {
-    private long red = 1L;
+    private int red = 1;
 
     private Input<Double> green = Input.fromNullable(0.0);
 
@@ -91,7 +129,7 @@ public final class ColorInput {
     /**
      * Red color
      */
-    public Builder red(long red) {
+    public Builder red(int red) {
       this.red = red;
       return this;
     }
@@ -123,7 +161,7 @@ public final class ColorInput {
     /**
      * Green color
      */
-    public Builder greenInput(@Nonnull Input<Double> green) {
+    public Builder greenInput(@NotNull Input<Double> green) {
       this.green = Utils.checkNotNull(green, "green == null");
       return this;
     }
@@ -131,7 +169,7 @@ public final class ColorInput {
     /**
      * for test purpose only
      */
-    public Builder enumWithDefaultValueInput(@Nonnull Input<Episode> enumWithDefaultValue) {
+    public Builder enumWithDefaultValueInput(@NotNull Input<Episode> enumWithDefaultValue) {
       this.enumWithDefaultValue = Utils.checkNotNull(enumWithDefaultValue, "enumWithDefaultValue == null");
       return this;
     }

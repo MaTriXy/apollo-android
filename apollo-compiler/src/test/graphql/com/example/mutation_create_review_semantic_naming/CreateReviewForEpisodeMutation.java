@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class CreateReviewForEpisodeMutation implements Mutation<CreateReviewForEpisodeMutation.Data, Optional<CreateReviewForEpisodeMutation.Data>, CreateReviewForEpisodeMutation.Variables> {
@@ -35,6 +35,8 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
       + "    commentary\n"
       + "  }\n"
       + "}";
+
+  public static final String OPERATION_ID = "eb015fa9dd6e305a9228393e61579154ae22719f6a18df6d00b45659ee2e7f7f";
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -47,7 +49,7 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
 
   private final CreateReviewForEpisodeMutation.Variables variables;
 
-  public CreateReviewForEpisodeMutation(@Nonnull Episode ep, @Nonnull ReviewInput review) {
+  public CreateReviewForEpisodeMutation(@NotNull Episode ep, @NotNull ReviewInput review) {
     Utils.checkNotNull(ep, "ep == null");
     Utils.checkNotNull(review, "review == null");
     variables = new CreateReviewForEpisodeMutation.Variables(ep, review);
@@ -55,7 +57,7 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
 
   @Override
   public String operationId() {
-    return "eb015fa9dd6e305a9228393e61579154ae22719f6a18df6d00b45659ee2e7f7f";
+    return OPERATION_ID;
   }
 
   @Override
@@ -88,19 +90,19 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
   }
 
   public static final class Builder {
-    private @Nonnull Episode ep;
+    private @NotNull Episode ep;
 
-    private @Nonnull ReviewInput review;
+    private @NotNull ReviewInput review;
 
     Builder() {
     }
 
-    public Builder ep(@Nonnull Episode ep) {
+    public Builder ep(@NotNull Episode ep) {
       this.ep = ep;
       return this;
     }
 
-    public Builder review(@Nonnull ReviewInput review) {
+    public Builder review(@NotNull ReviewInput review) {
       this.review = review;
       return this;
     }
@@ -113,24 +115,24 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
   }
 
   public static final class Variables extends Operation.Variables {
-    private final @Nonnull Episode ep;
+    private final @NotNull Episode ep;
 
-    private final @Nonnull ReviewInput review;
+    private final @NotNull ReviewInput review;
 
     private final transient Map<String, Object> valueMap = new LinkedHashMap<>();
 
-    Variables(@Nonnull Episode ep, @Nonnull ReviewInput review) {
+    Variables(@NotNull Episode ep, @NotNull ReviewInput review) {
       this.ep = ep;
       this.review = review;
       this.valueMap.put("ep", ep);
       this.valueMap.put("review", review);
     }
 
-    public @Nonnull Episode ep() {
+    public @NotNull Episode ep() {
       return ep;
     }
 
-    public @Nonnull ReviewInput review() {
+    public @NotNull ReviewInput review() {
       return review;
     }
 
@@ -144,7 +146,7 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
       return new InputFieldMarshaller() {
         @Override
         public void marshal(InputFieldWriter writer) throws IOException {
-          writer.writeString("ep", ep.name());
+          writer.writeString("ep", ep.rawValue());
           writer.writeObject("review", review.marshaller());
         }
       };
@@ -154,13 +156,13 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
   public static class Data implements Operation.Data {
     static final ResponseField[] $responseFields = {
       ResponseField.forObject("createReview", "createReview", new UnmodifiableMapBuilder<String, Object>(2)
-        .put("review", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("kind", "Variable")
-          .put("variableName", "review")
+      .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "ep")
         .build())
-        .put("episode", new UnmodifiableMapBuilder<String, Object>(2)
-          .put("kind", "Variable")
-          .put("variableName", "ep")
+      .put("review", new UnmodifiableMapBuilder<String, Object>(2)
+        .put("kind", "Variable")
+        .put("variableName", "review")
         .build())
       .build(), true, Collections.<ResponseField.Condition>emptyList())
     };
@@ -243,13 +245,13 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
   public static class CreateReview {
     static final ResponseField[] $responseFields = {
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
-      ResponseField.forLong("stars", "stars", null, false, Collections.<ResponseField.Condition>emptyList()),
+      ResponseField.forInt("stars", "stars", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("commentary", "commentary", null, true, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final @Nonnull String __typename;
+    final @NotNull String __typename;
 
-    final long stars;
+    final int stars;
 
     final Optional<String> commentary;
 
@@ -259,20 +261,20 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
 
     private volatile boolean $hashCodeMemoized;
 
-    public CreateReview(@Nonnull String __typename, long stars, @Nullable String commentary) {
+    public CreateReview(@NotNull String __typename, int stars, @Nullable String commentary) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
       this.stars = stars;
       this.commentary = Optional.fromNullable(commentary);
     }
 
-    public @Nonnull String __typename() {
+    public @NotNull String __typename() {
       return this.__typename;
     }
 
     /**
      * The number of stars this review gave, 1-5
      */
-    public long stars() {
+    public int stars() {
       return this.stars;
     }
 
@@ -288,7 +290,7 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
         @Override
         public void marshal(ResponseWriter writer) {
           writer.writeString($responseFields[0], __typename);
-          writer.writeLong($responseFields[1], stars);
+          writer.writeInt($responseFields[1], stars);
           writer.writeString($responseFields[2], commentary.isPresent() ? commentary.get() : null);
         }
       };
@@ -340,7 +342,7 @@ public final class CreateReviewForEpisodeMutation implements Mutation<CreateRevi
       @Override
       public CreateReview map(ResponseReader reader) {
         final String __typename = reader.readString($responseFields[0]);
-        final long stars = reader.readLong($responseFields[1]);
+        final int stars = reader.readInt($responseFields[1]);
         final String commentary = reader.readString($responseFields[2]);
         return new CreateReview(__typename, stars, commentary);
       }

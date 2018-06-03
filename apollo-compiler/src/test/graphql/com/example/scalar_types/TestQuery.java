@@ -13,19 +13,21 @@ import com.apollographql.apollo.api.internal.Utils;
 import com.example.scalar_types.type.CustomType;
 import java.lang.Boolean;
 import java.lang.Double;
-import java.lang.Long;
+import java.lang.Integer;
 import java.lang.Object;
 import java.lang.Override;
 import java.lang.String;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery.Data>, Operation.Variables> {
   public static final String OPERATION_DEFINITION = "";
+
+  public static final String OPERATION_ID = null;
 
   public static final String QUERY_DOCUMENT = OPERATION_DEFINITION;
 
@@ -44,7 +46,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   @Override
   public String operationId() {
-    return null;
+    return OPERATION_ID;
   }
 
   @Override
@@ -90,8 +92,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       ResponseField.forString("graphQlString", "graphQlString", null, true, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forCustomType("graphQlIdNullable", "graphQlIdNullable", null, true, CustomType.ID, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forCustomType("graphQlIdNonNullable", "graphQlIdNonNullable", null, false, CustomType.ID, Collections.<ResponseField.Condition>emptyList()),
-      ResponseField.forLong("graphQlIntNullable", "graphQlIntNullable", null, true, Collections.<ResponseField.Condition>emptyList()),
-      ResponseField.forLong("graphQlIntNonNullable", "graphQlIntNonNullable", null, false, Collections.<ResponseField.Condition>emptyList()),
+      ResponseField.forInt("graphQlIntNullable", "graphQlIntNullable", null, true, Collections.<ResponseField.Condition>emptyList()),
+      ResponseField.forInt("graphQlIntNonNullable", "graphQlIntNonNullable", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forDouble("graphQlFloatNullable", "graphQlFloatNullable", null, true, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forDouble("graphQlFloatNonNullable", "graphQlFloatNonNullable", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forBoolean("graphQlBooleanNullable", "graphQlBooleanNullable", null, true, Collections.<ResponseField.Condition>emptyList()),
@@ -104,11 +106,11 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     final Optional<String> graphQlIdNullable;
 
-    final @Nonnull String graphQlIdNonNullable;
+    final @NotNull String graphQlIdNonNullable;
 
-    final Optional<Long> graphQlIntNullable;
+    final Optional<Integer> graphQlIntNullable;
 
-    final long graphQlIntNonNullable;
+    final int graphQlIntNonNullable;
 
     final Optional<Double> graphQlFloatNullable;
 
@@ -118,7 +120,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     final boolean graphQlBooleanNonNullable;
 
-    final Optional<List<Long>> graphQlListOfInt;
+    final Optional<List<Integer>> graphQlListOfInt;
 
     final Optional<List<GraphQlListOfObject>> graphQlListOfObjects;
 
@@ -129,10 +131,10 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
     private volatile boolean $hashCodeMemoized;
 
     public Data(@Nullable String graphQlString, @Nullable String graphQlIdNullable,
-        @Nonnull String graphQlIdNonNullable, @Nullable Long graphQlIntNullable,
-        long graphQlIntNonNullable, @Nullable Double graphQlFloatNullable,
+        @NotNull String graphQlIdNonNullable, @Nullable Integer graphQlIntNullable,
+        int graphQlIntNonNullable, @Nullable Double graphQlFloatNullable,
         double graphQlFloatNonNullable, @Nullable Boolean graphQlBooleanNullable,
-        boolean graphQlBooleanNonNullable, @Nullable List<Long> graphQlListOfInt,
+        boolean graphQlBooleanNonNullable, @Nullable List<Integer> graphQlListOfInt,
         @Nullable List<GraphQlListOfObject> graphQlListOfObjects) {
       this.graphQlString = Optional.fromNullable(graphQlString);
       this.graphQlIdNullable = Optional.fromNullable(graphQlIdNullable);
@@ -155,15 +157,15 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this.graphQlIdNullable;
     }
 
-    public @Nonnull String graphQlIdNonNullable() {
+    public @NotNull String graphQlIdNonNullable() {
       return this.graphQlIdNonNullable;
     }
 
-    public Optional<Long> graphQlIntNullable() {
+    public Optional<Integer> graphQlIntNullable() {
       return this.graphQlIntNullable;
     }
 
-    public long graphQlIntNonNullable() {
+    public int graphQlIntNonNullable() {
       return this.graphQlIntNonNullable;
     }
 
@@ -183,7 +185,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return this.graphQlBooleanNonNullable;
     }
 
-    public Optional<List<Long>> graphQlListOfInt() {
+    public Optional<List<Integer>> graphQlListOfInt() {
       return this.graphQlListOfInt;
     }
 
@@ -198,8 +200,8 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
           writer.writeString($responseFields[0], graphQlString.isPresent() ? graphQlString.get() : null);
           writer.writeCustom((ResponseField.CustomTypeField) $responseFields[1], graphQlIdNullable.isPresent() ? graphQlIdNullable.get() : null);
           writer.writeCustom((ResponseField.CustomTypeField) $responseFields[2], graphQlIdNonNullable);
-          writer.writeLong($responseFields[3], graphQlIntNullable.isPresent() ? graphQlIntNullable.get() : null);
-          writer.writeLong($responseFields[4], graphQlIntNonNullable);
+          writer.writeInt($responseFields[3], graphQlIntNullable.isPresent() ? graphQlIntNullable.get() : null);
+          writer.writeInt($responseFields[4], graphQlIntNonNullable);
           writer.writeDouble($responseFields[5], graphQlFloatNullable.isPresent() ? graphQlFloatNullable.get() : null);
           writer.writeDouble($responseFields[6], graphQlFloatNonNullable);
           writer.writeBoolean($responseFields[7], graphQlBooleanNullable.isPresent() ? graphQlBooleanNullable.get() : null);
@@ -207,7 +209,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
           writer.writeList($responseFields[9], graphQlListOfInt.isPresent() ? graphQlListOfInt.get() : null, new ResponseWriter.ListWriter() {
             @Override
             public void write(Object value, ResponseWriter.ListItemWriter listItemWriter) {
-              listItemWriter.writeLong(value);
+              listItemWriter.writeInt(value);
             }
           });
           writer.writeList($responseFields[10], graphQlListOfObjects.isPresent() ? graphQlListOfObjects.get() : null, new ResponseWriter.ListWriter() {
@@ -302,16 +304,16 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
         final String graphQlString = reader.readString($responseFields[0]);
         final String graphQlIdNullable = reader.readCustomType((ResponseField.CustomTypeField) $responseFields[1]);
         final String graphQlIdNonNullable = reader.readCustomType((ResponseField.CustomTypeField) $responseFields[2]);
-        final Long graphQlIntNullable = reader.readLong($responseFields[3]);
-        final long graphQlIntNonNullable = reader.readLong($responseFields[4]);
+        final Integer graphQlIntNullable = reader.readInt($responseFields[3]);
+        final int graphQlIntNonNullable = reader.readInt($responseFields[4]);
         final Double graphQlFloatNullable = reader.readDouble($responseFields[5]);
         final double graphQlFloatNonNullable = reader.readDouble($responseFields[6]);
         final Boolean graphQlBooleanNullable = reader.readBoolean($responseFields[7]);
         final boolean graphQlBooleanNonNullable = reader.readBoolean($responseFields[8]);
-        final List<Long> graphQlListOfInt = reader.readList($responseFields[9], new ResponseReader.ListReader<Long>() {
+        final List<Integer> graphQlListOfInt = reader.readList($responseFields[9], new ResponseReader.ListReader<Integer>() {
           @Override
-          public Long read(ResponseReader.ListItemReader listItemReader) {
-            return listItemReader.readLong();
+          public Integer read(ResponseReader.ListItemReader listItemReader) {
+            return listItemReader.readInt();
           }
         });
         final List<GraphQlListOfObject> graphQlListOfObjects = reader.readList($responseFields[10], new ResponseReader.ListReader<GraphQlListOfObject>() {
@@ -332,10 +334,10 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
   public static class GraphQlListOfObject {
     static final ResponseField[] $responseFields = {
-      ResponseField.forLong("someField", "someField", null, false, Collections.<ResponseField.Condition>emptyList())
+      ResponseField.forInt("someField", "someField", null, false, Collections.<ResponseField.Condition>emptyList())
     };
 
-    final long someField;
+    final int someField;
 
     private volatile String $toString;
 
@@ -343,11 +345,11 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
 
     private volatile boolean $hashCodeMemoized;
 
-    public GraphQlListOfObject(long someField) {
+    public GraphQlListOfObject(int someField) {
       this.someField = someField;
     }
 
-    public long someField() {
+    public int someField() {
       return this.someField;
     }
 
@@ -355,7 +357,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
       return new ResponseFieldMarshaller() {
         @Override
         public void marshal(ResponseWriter writer) {
-          writer.writeLong($responseFields[0], someField);
+          writer.writeInt($responseFields[0], someField);
         }
       };
     }
@@ -397,7 +399,7 @@ public final class TestQuery implements Query<TestQuery.Data, Optional<TestQuery
     public static final class Mapper implements ResponseFieldMapper<GraphQlListOfObject> {
       @Override
       public GraphQlListOfObject map(ResponseReader reader) {
-        final long someField = reader.readLong($responseFields[0]);
+        final int someField = reader.readInt($responseFields[0]);
         return new GraphQlListOfObject(someField);
       }
     }
