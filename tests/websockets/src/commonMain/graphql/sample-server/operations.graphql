@@ -1,0 +1,46 @@
+subscription Count($to: Int!, $intervalMillis: Int!)  {
+  count(to: $to, intervalMillis: $intervalMillis)
+}
+
+subscription CountString($to: Int!, $intervalMillis: Int!)  {
+  countString(to: $to, intervalMillis: $intervalMillis)
+}
+
+subscription SecondsSinceEpochSubscription($intervalMillis: Int!)  {
+  secondsSinceEpoch(intervalMillis: $intervalMillis)
+}
+
+subscription OperationError {
+  operationError
+}
+
+query ValueSharedWithSubscriptionsQuery {
+  valueSharedWithSubscriptions
+}
+
+subscription ValueSharedWithSubscriptionsSubscription {
+  valueSharedWithSubscriptions
+}
+
+query ZeroQuery {
+  zero
+}
+
+mutation CloseSocketMutation {
+  closeAllWebSockets
+}
+
+subscription CloseSocketSubscription {
+  closeWebSocket
+}
+
+subscription GraphqlAccessError($after: Int!) {
+  graphqlAccessError(after: $after)
+}
+
+subscription Tag($intervalMillis: Int!)  {
+  state(intervalMillis: $intervalMillis) {
+    tag
+    subscriptionId
+  }
+}

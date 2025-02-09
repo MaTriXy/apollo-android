@@ -1,0 +1,13 @@
+query CreateUser($input: UserInput!) {
+  createUser(input: $input)
+}
+
+query CreateUser2($input: UserInput) {
+  createUser(input: $input)
+}
+
+query FindUser($input: FindUserInput) {
+  findUser(input: $input) {
+    id
+  }
+}

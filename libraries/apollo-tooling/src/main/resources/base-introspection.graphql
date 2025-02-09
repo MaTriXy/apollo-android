@@ -1,0 +1,102 @@
+# Base introspection query that will be augmented according to the server's supported GraphQL features.
+# The supported features are retrieved by executing a pre-introspection query.
+# The fields that can be added or modified are shown as comments.
+# Draft spec is as of 2023-11-21.
+
+query IntrospectionQuery {
+  __schema {
+    # description - introduced in https://spec.graphql.org/October2021/
+    queryType { name }
+    mutationType { name }
+    subscriptionType { name }
+    types {
+      ...FullType
+    }
+    directives {
+      name
+      description
+      locations
+      args { # args(includeDeprecated: true) - introduced in https://github.com/graphql/graphql-spec/pull/805/
+        ...InputValue
+      }
+      # isRepeatable - introduced in https://spec.graphql.org/October2021/
+    }
+  }
+}
+
+fragment FullType on __Type {
+  kind
+  name
+  description
+  fields(includeDeprecated: true) {
+    name
+    description
+    args { # args(includeDeprecated: true) - introduced in https://github.com/graphql/graphql-spec/pull/805/
+      ...InputValue
+    }
+    type {
+      ...TypeRef
+    }
+    isDeprecated
+    deprecationReason
+  }
+  inputFields { # inputFields(includeDeprecated: true) - introduced in https://github.com/graphql/graphql-spec/pull/805/
+    ...InputValue
+  }
+  interfaces {
+    ...TypeRef
+  }
+  enumValues(includeDeprecated: true) {
+    name
+    description
+    isDeprecated
+    deprecationReason
+  }
+  possibleTypes {
+    ...TypeRef
+  }
+  # specifiedByURL - introduced in https://spec.graphql.org/October2021/
+  # isOneOf - introduced in https://github.com/graphql/graphql-spec/pull/825/
+}
+
+fragment InputValue on __InputValue {
+  name
+  description
+  type { ...TypeRef }
+  defaultValue
+  # isDeprecated - introduced in https://github.com/graphql/graphql-spec/pull/805/
+  # deprecationReason - introduced in https://github.com/graphql/graphql-spec/pull/805/
+}
+
+fragment TypeRef on __Type {
+  kind
+  name
+  ofType {
+    kind
+    name
+    ofType {
+      kind
+      name
+      ofType {
+        kind
+        name
+        ofType {
+          kind
+          name
+          ofType {
+            kind
+            name
+            ofType {
+              kind
+              name
+              ofType {
+                kind
+                name
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

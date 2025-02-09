@@ -1,16 +1,1 @@
-title: Apollo Android Guide
-subtitle: Apollo Android Guide
-versions:
-  - '1'
-sidebar_categories:
-  null:
-    - index
-
-github_repo: apollographql/apollo-android
-content_root: docs/source
-
-url: https://www.apollographql.com/docs/android
-root: /docs/android/
-
-public_dir: public/docs/android
-
+theme: jekyll-theme-minimal

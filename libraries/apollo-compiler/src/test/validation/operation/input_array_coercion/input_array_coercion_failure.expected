@@ -1,0 +1,8 @@
+OtherValidationIssue (3:31)
+Variable `var` of type `Int` used in position expecting type `[Int]`
+------------
+OtherValidationIssue (8:38)
+Value `null` cannot be used in position expecting `[Int!]!`
+------------
+OtherValidationIssue (16:31)
+Value `"Foo"` cannot be used in position expecting `Int`

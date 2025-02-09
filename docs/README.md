@@ -1,8 +1,9 @@
-# docs
+# Documentation
 
-To run:
+This is the documentation **source** for this repository.
 
-```
-npm install
-npm start
-```
+The **deployed** version of the documentation for this repository is available at:
+
+* https://www.apollographql.com/docs/kotlin/
+
+See the [docs site README](https://github.com/apollographql/docs) for local installation and development.

@@ -1,0 +1,27 @@
+query GetAnimal {
+  animal {
+    __typename
+    species
+    ... on Cat {
+      name
+    }
+  }
+  direction
+  point
+  bookOrLion {
+    ... on Lion {
+      species
+    }
+    ... on Book {
+      title
+    }
+  }
+}
+
+
+subscription Event {
+  event {
+    time
+    currentTimeMillis
+  }
+}

@@ -1,0 +1,10 @@
+directive @catch on FIELD_DEFINITION
+enum CatchTo {
+  NULL
+  EMPTY
+  ERROR
+}
+
+type Query {
+  x: Int
+}

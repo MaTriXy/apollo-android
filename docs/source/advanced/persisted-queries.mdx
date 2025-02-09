@@ -1,0 +1,117 @@
+---
+title: Persisted queries 
+description: Secure your graph while minimizing request latency
+---
+
+<ClientPQIntro />
+
+Hashed queries are also sent by default using HTTP `GET` instead of the default `POST`, making them easier to cache in your edge network.
+
+## Differences between persisted queries and APQs
+
+<ClientPQDifferences />
+
+## Implementation steps
+
+Both persisted queries and APQs require you to configure how your client makes requests. If you intend to use persisted queries for safelisting, you also need to generate and publish an operation manifest.
+
+<ClientPQImplementation />
+
+### 0. Requirements
+
+You can use APQs with the following versions of Apollo Kotlin, Apollo Server, and Apollo Router Core:
+- Apollo Kotlin (v1.0.0+)
+- [Apollo Server](/apollo-server/) (v1.0.0+)
+- [Apollo Router Core](/router) (v0.1.0+)
+
+
+<Note>
+
+You can use _either_ Apollo Server _or_ Apollo Router Core for APQs. They don't need to be used together.
+
+</Note>
+
+Using persisted queries for safelisting has the following requirements:
+- Apollo Kotlin (v3.8.2+)
+- [GraphOS Router](/router) (v1.25.0+)
+- [GraphOS Enterprise plan](/graphos/enterprise/)
+
+### 1. Generate operation manifest
+
+> This step is only required for implementing safelisting with persisted queries. It is _not_ required for APQs.
+
+The operation manifest acts as a safelist of trusted operations the [GraphOS Router](/router/) can check incoming requests against. 
+To generate the operation manifest, set `operationManifestFormat` to `"persistedQueryManifest"` in your Gradle script:
+
+```kotlin
+// build.gradle.kts
+apollo {
+  service("api") {
+    packageName.set("com.example")
+    
+    // Enable generation of the operation manifest
+    operationManifestFormat.set("persistedQueryManifest") // highlight-line 
+  }
+}
+```
+
+The operation manifest is generated during code generation. This happens automatically every time you build your project, or you can trigger it manually by executing the `generateApolloSources` Gradle task. 
+
+The operation manifest is generated in `build/generated/manifest/apollo/$serviceName/persistedQueryManifest.json`, where `$serviceName` is `"api"` here. The resulting operation manifest looks something like this:
+
+```json title="persistedQueryManifest.json"
+{
+  "format": "apollo-persisted-query-manifest",
+  "version": 1,
+  "operations": [
+    {
+      "id": "e0321f6b438bb42c022f633d38c19549dea9a2d55c908f64c5c6cb8403442fef",
+      "body": "query GetItem { thing { __typename } }",
+      "name": "GetItem",
+      "type": "query"
+    }
+  ]
+}
+```
+
+### 2. Publish operation manifest
+
+> This step is only required for implementing safelisting with persisted queries. It is _not_ required for APQs.
+
+<PublishPQMs />
+
+### 3. Enable persisted queries on `ApolloClient`
+
+Once you've configured your code generation to include operation IDs, you can update your client to query by operation ID rather than the full operation string. This configuration is the same whether you're using APQs or persisted queries. Call `autoPersistedQueries()` on your `ApolloClient.Builder`:
+
+```kotlin
+val apolloClient = ApolloClient.Builder()
+  .serverUrl("https://example.com/graphql")
+  .autoPersistedQueries()
+  .build()
+```
+
+Once APQs are enabled on your ApolloClient, hashed queries are sent by default.
+
+You may want to disable automatic persisted queries for certain queries, for instance to avoid any caching when the data is updated often. To do that, set `enableAutoPersistedQueries` to false on the `ApolloCall`:
+
+```kotlin
+apolloClient.query(myQuery).enableAutoPersistedQueries(false).toFlow()
+```
+
+## Generating custom IDs for persisted queries
+
+By default, Apollo uses `Sha256` hashing algorithm to generate an ID for the query. To provide custom ID generation logic, use [Apollo compiler plugins](../advanced/compiler-plugins). 
+
+The `Plugin` interface has an `operationIds()` method that you can override to customize the operation ids. It takes a list of `OperationDescriptor` including the source document and name and returns a list of `OperationId` mapping each name to the generated id. 
+
+Example Md5 hash generator:
+
+```kotlin
+class MyPlugin: Plugin {
+  override fun operationIds(descriptors: List<OperationDescriptor>): List<OperationId> {
+    return descriptors.map { OperationId(it.source.md5(), it.name) }
+  }
+}
+```
+

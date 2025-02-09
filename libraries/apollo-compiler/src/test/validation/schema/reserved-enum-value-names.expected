@@ -1,0 +1,5 @@
+ReservedEnumValueName (11:3)
+'foo' is already defined in this enum, please use a different name
+------------
+ReservedEnumValueName (16:3)
+'bar' is already defined in this enum, please use a different name

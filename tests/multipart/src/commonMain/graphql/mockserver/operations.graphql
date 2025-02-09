@@ -1,0 +1,13 @@
+query MyQuery {
+  __typename
+}
+
+subscription CounterSubscription {
+  counter {
+    count
+  }
+}
+
+subscription Hello {
+  hello
+}

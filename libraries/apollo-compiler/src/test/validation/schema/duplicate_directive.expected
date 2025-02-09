@@ -1,0 +1,2 @@
+DirectiveRedefinition (7:1)
+Directive 'foo' is defined multiple times. First definition is: duplicate_directive.graphql: (6, 1)

@@ -1,0 +1,49 @@
+mutation RegisterOperations(
+  $id: ID!
+  $clientIdentity: RegisteredClientIdentityInput!
+  $operations: [RegisteredOperationInput!]!
+  $manifestVersion: Int!
+  $graphVariant: String!
+) {
+  service(id: $id) {
+    registerOperationsWithResponse(
+      clientIdentity: $clientIdentity
+      operations: $operations
+      manifestVersion: $manifestVersion
+      graphVariant: $graphVariant
+    ) {
+      invalidOperations {
+        errors {
+          message
+        }
+        signature
+      }
+      newOperations {
+        signature
+      }
+      registrationSuccess
+    }
+  }
+}
+
+query FieldLatencies($serviceId: ID!, $fromTimestamp: Timestamp!, $percentile: Float!) {
+  service(id: $serviceId) {
+    statsWindow(from: $fromTimestamp) {
+      fieldLatencies {
+        groupBy {
+          parentType
+          fieldName
+        }
+        metrics {
+          fieldHistogram {
+            durationMs(percentile: $percentile)
+          }
+        }
+      }
+    }
+  }
+}
+
+mutation TrackApolloKotlinUsage($instanceId: ID!, $properties: [ApolloKotlinUsagePropertyInput!]!, $events: [ApolloKotlinUsageEventInput!]!) {
+  trackApolloKotlinUsage(instanceId: $instanceId, properties: $properties, events: $events)
+}

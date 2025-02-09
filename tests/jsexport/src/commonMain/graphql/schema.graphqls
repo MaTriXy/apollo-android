@@ -1,0 +1,40 @@
+type Query {
+  animal: Animal!
+  direction: Direction
+  point: Point
+  bookOrLion: BookOrLion
+}
+
+type Subscription {
+  event: Event
+}
+
+type Event {
+  time: String
+  currentTimeMillis: Int
+}
+
+interface Animal {
+  species: String!
+}
+
+type Lion implements Animal{
+  species: String!
+}
+
+type Cat implements Animal {
+  species: String!
+  name: String!
+}
+
+type Book {
+  title: String
+}
+
+enum Direction {
+  SOUTH, NORTH
+}
+
+union BookOrLion = Lion | Book
+
+scalar Point
