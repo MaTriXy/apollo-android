@@ -17,8 +17,7 @@ androidx-sqlite = "2.3.1"
 # This is used by the gradle integration tests to get the artifacts locally
 apollo = "4.1.2-SNAPSHOT"
 apollo-execution = "0.1.0"
-apollo-normalizedcache-incubating = "0.0.3"
-apollo-normalizedcache-incubating-snapshot = "0.0.5"
+apollo-normalizedcache-incubating = "0.0.6"
 # Used by the apollo-tooling project which uses a published version of Apollo
 apollo-published = "4.0.1"
 atomicfu = "0.26.0"
@@ -66,10 +65,9 @@ apollo-idlingresource = { group = "com.apollographql.apollo", name = "apollo-idl
 apollo-mockserver = { group = "com.apollographql.mockserver", name = "apollo-mockserver", version = "0.1.0" }
 apollo-mpputils = { group = "com.apollographql.apollo", name = "apollo-mpp-utils", version.ref = "apollo" }
 apollo-normalizedcache = { group = "com.apollographql.apollo", name = "apollo-normalized-cache", version.ref = "apollo" }
-apollo-normalizedcache-incubating-snapshot = { group = "com.apollographql.cache", name = "normalized-cache-incubating", version.ref = "apollo-normalizedcache-incubating-snapshot" }
 apollo-normalizedcache-sqlite = { group = "com.apollographql.apollo", name = "apollo-normalized-cache-sqlite", version.ref = "apollo" }
 apollo-normalizedcache-sqlite-incubating = { group = "com.apollographql.cache", name = "normalized-cache-sqlite-incubating", version.ref = "apollo-normalizedcache-incubating" }
-apollo-normalizedcache-sqlite-incubating-snapshot = { group = "com.apollographql.cache", name = "normalized-cache-sqlite-incubating", version.ref = "apollo-normalizedcache-incubating-snapshot" }
+apollo-normalizedcache-apollo-compiler-plugin-incubating = { group = "com.apollographql.cache", name = "normalized-cache-apollo-compiler-plugin", version.ref = "apollo-normalizedcache-incubating" }
 apollo-plugin = { group = "com.apollographql.apollo", name = "apollo-gradle-plugin", version.ref = "apollo" }
 apollo-runtime = { group = "com.apollographql.apollo", name = "apollo-runtime", version.ref = "apollo" }
 apollo-compiler = { group = "com.apollographql.apollo", name = "apollo-compiler", version.ref = "apollo" }
@@ -93,7 +91,7 @@ benmanes-versions = { group = "com.github.ben-manes", name = "gradle-versions-pl
 compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "compose" }
 compose-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "compose" }
 dokka = "org.jetbrains.dokka:dokka-gradle-plugin:2.0.0"
-dgp = "com.gradle:develocity-gradle-plugin:3.19.1" # // sync with settings.gradle.kts
+dgp = "com.gradle:develocity-gradle-plugin:3.19.2" # // sync with settings.gradle.kts
 # Not updating because it fails in apollo-compiler Java tests with
 # annotation @org.jetbrains.annotations.Nullable not applicable in this type context
 google-testing-compile = { group = "com.google.testing.compile", name = "compile-testing", version = "0.19" }
