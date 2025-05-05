@@ -52,7 +52,10 @@ class ApolloCall<D : Operation.Data> internal constructor(
   override val enableAutoPersistedQueries: Boolean? get() = requestBuilder.enableAutoPersistedQueries
   override val canBeBatched: Boolean? get() = requestBuilder.canBeBatched
   override val httpHeaders: List<HttpHeader>? get() = requestBuilder.httpHeaders
+  override val ignoreUnknownKeys: Boolean? get() = requestBuilder.ignoreUnknownKeys
+
   val ignoreApolloClientHttpHeaders: Boolean? get() = requestBuilder.ignoreApolloClientHttpHeaders
+
   @ApolloExperimental
   val retryOnError: Boolean? get() = requestBuilder.retryOnError
   @ApolloExperimental
@@ -92,6 +95,10 @@ class ApolloCall<D : Operation.Data> internal constructor(
 
   override fun canBeBatched(canBeBatched: Boolean?) = apply {
     requestBuilder.canBeBatched(canBeBatched)
+  }
+
+  override fun ignoreUnknownKeys(ignoreUnknownKeys: Boolean?) = apply {
+    requestBuilder.ignoreUnknownKeys(ignoreUnknownKeys)
   }
 
   @ApolloExperimental
@@ -138,34 +145,6 @@ class ApolloCall<D : Operation.Data> internal constructor(
    */
   fun toFlow(): Flow<ApolloResponse<D>> {
     return apolloClient.executeAsFlowInternal(requestBuilder.build(), false)
-  }
-
-  /**
-   * A version of [execute] that restores 3.x behaviour:
-   * - throw on fetch errors.
-   * - make `CacheFirst`, `NetworkFirst` and `CacheAndNetwork` policies ignore fetch errors.
-   * - throw ApolloComposite exception if needed.
-   */
-  @Deprecated("Use toFlow() and handle ApolloResponse.exception instead")
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  fun toFlowV3(): Flow<ApolloResponse<D>> {
-    @Suppress("DEPRECATION")
-    return conflateFetchPolicyInterceptorResponses(true)
-        .apolloClient
-        .executeAsFlowInternal(requestBuilder.build(), true)
-  }
-
-  /**
-   * A version of [execute] that restores 3.x behaviour:
-   * - throw on fetch errors.
-   * - make `CacheFirst`, `NetworkFirst` and `CacheAndNetwork` policies ignore fetch errors.
-   * - throw ApolloComposite exception if needed.
-   */
-  @Deprecated("Use execute() and handle ApolloResponse.exception instead")
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  suspend fun executeV3(): ApolloResponse<D> {
-    @Suppress("DEPRECATION")
-    return singleSuccessOrException(toFlowV3())
   }
 
   /**

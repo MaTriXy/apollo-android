@@ -5,7 +5,8 @@ import com.apollographql.apollo.annotations.ApolloExperimental
 import com.apollographql.apollo.annotations.ApolloInternal
 import com.apollographql.apollo.ast.internal.ExtensionsMerger
 import com.apollographql.apollo.ast.internal.builtinsDefinitionsStr
-import com.apollographql.apollo.ast.internal.ensureSchemaDefinition
+import com.apollographql.apollo.ast.internal.compilerOptions_0_0
+import com.apollographql.apollo.ast.internal.compilerOptions_0_1_additions
 import com.apollographql.apollo.ast.internal.kotlinLabsDefinitions_0_3
 import com.apollographql.apollo.ast.internal.kotlinLabsDefinitions_0_4
 import com.apollographql.apollo.ast.internal.linkDefinitionsStr
@@ -13,7 +14,7 @@ import com.apollographql.apollo.ast.internal.nullabilityDefinitionsStr
 import okio.Buffer
 
 /**
- * Add builtin definitions from the latest spec version to the [GQLDocument]
+ * Add built-in definitions supported by Apollo Kotlin to the [GQLDocument]
  *
  * SDL representations must skip scalars and may skip directive definitions. This function adds them back to form a full schema.
  *
@@ -22,32 +23,50 @@ import okio.Buffer
  * Scalars: https://spec.graphql.org/draft/#sel-GAHXJHABAB_D4G
  * Directives: https://spec.graphql.org/draft/#sel-FAHnBPLCAACCcooU
  */
-@Deprecated("use toFullSchemaGQLDocument instead", ReplaceWith("toFullSchemaGQLDocument()"))
+@Deprecated("use toFullSchemaGQLDocument instead", ReplaceWith("toFullSchemaGQLDocument()"), level = DeprecationLevel.ERROR)
 @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_1_2)
 fun GQLDocument.withBuiltinDefinitions(): GQLDocument {
-  return withDefinitions(builtinDefinitions())
+  return copy(
+      definitions = definitions.withBuiltinDefinitions()
+  )
 }
 
 /**
- * Returns a "full schema" document. Full schema documents are for use by clients and other tools that need
- * to know what features are supported by a given server. They include builtin directives and merge all type
- * extensions
+ * This is called 3 times in Apollo Kotlin:
+ * 1. In codegen, to make sure we have built-in scalar types.
+ * 2. When converting a schema from SDL to introspection, because the SDL might be a backend SDL.
+ * 3. When downloading a schema from the registry, because the API doesn't return the scalar type definitions.
+ *
+ * TODO v5: only add scalar definitions, and not everything.
+ */
+internal fun List<GQLDefinition>.withBuiltinDefinitions(): List<GQLDefinition> {
+  return combineDefinitions(this, builtinDefinitions())
+}
+
+/**
+ * Returns a "full schema" document containing the built-in definitions supported by Apollo Kotlin.
+ *
+ * Using this is usually dangerous as there's a risk of disconnect between the spec version used by
+ * the server and the one used by Apollo Kotlin. Whenever possible, it is best to generate a gull
+ * schema from introspection results.
+ *
+ * See https://github.com/graphql/graphql-wg/blob/main/rfcs/FullSchemas.md
  */
 @ApolloExperimental
 fun GQLDocument.toFullSchemaGQLDocument(): GQLDocument {
-  return ensureSchemaDefinition()
-      .withDefinitions(builtinDefinitions())
-      .toMergedGQLDocument()
+  @Suppress("DEPRECATION_ERROR")
+  return withBuiltinDefinitions()
 }
 
 fun GQLDocument.toSchema(): Schema = validateAsSchema().getOrThrow()
 
 @ApolloExperimental
 class MergeOptions(
+    val allowAddingDirectivesToExistingFieldDefinitions: Boolean,
     val allowFieldNullabilityModification: Boolean
 ) {
   companion object {
-    val Default: MergeOptions = MergeOptions(false)
+    val Default: MergeOptions = MergeOptions(false, false)
   }
 }
 
@@ -65,14 +84,14 @@ fun GQLDocument.mergeExtensions(mergeOptions: MergeOptions = MergeOptions.Defaul
   )
 }
 
-@Deprecated("Use GQLDocument.toSDL() to write a GQLDocument")
+@Deprecated("Use GQLDocument.toSDL() to write a GQLDocument", level = DeprecationLevel.ERROR)
 @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
 fun GQLDocument.withoutBuiltinDefinitions(): GQLDocument {
   return withoutDefinitions(builtinDefinitions())
 }
 
 /**
- * Definitions from the spec
+ * Definitions tracking the specification draft
  */
 fun builtinDefinitions() = definitionsFromString(builtinsDefinitionsStr)
 
@@ -81,23 +100,44 @@ fun builtinDefinitions() = definitionsFromString(builtinsDefinitionsStr)
  *
  * https://specs.apollo.dev/link/v1.0/
  */
+@ApolloInternal
 fun linkDefinitions() = definitionsFromString(linkDefinitionsStr)
 
+/**
+ * We used to auto import kotlin_labs definitions so that users could use `@nonnull`, etc...
+ * Moving forward, we require users to explicitly import the version of the kotlin_labs definitions
+ * they are using.
+ *
+ * TODO v5 remove this
+ */
 @ApolloInternal
-const val KOTLIN_LABS_VERSION = "v0.3"
+const val AUTO_IMPORTED_KOTLIN_LABS_VERSION = "v0.3"
 
 /**
- * Extra apollo Kotlin specific definitions from https://specs.apollo.dev/kotlin_labs/<[version]>
+ * The latest supported version of the `kotlin_labs` definitions
  */
+@ApolloInternal
+const val KOTLIN_LABS_VERSION = "v0.4"
+
+/**
+ * Apollo Kotlin definitions from https://specs.apollo.dev/kotlin_labs/<[version]>
+ */
+@ApolloInternal
 fun kotlinLabsDefinitions(version: String): List<GQLDefinition> {
   return definitionsFromString(when (version) {
     // v0.3 has no behavior change over v0.2, so both versions map to the same definitions
     "v0.2", "v0.3" -> kotlinLabsDefinitions_0_3
     // v0.4 doesn't have `@nonnull`
     "v0.4" -> kotlinLabsDefinitions_0_4
-    else -> error("kotlin_labs/$version definitions are not supported, please use $KOTLIN_LABS_VERSION")
+    // v0.5 adds `@map` and `@mapTo`
+    "v0.5" -> kotlinLabsDefinitions_0_4 + compilerOptions_0_0
+    // v0.6 adds `@generateDataBuilders`
+    "v0.6" -> kotlinLabsDefinitions_0_4 + compilerOptions_0_0 + compilerOptions_0_1_additions
+    else -> error("kotlin_labs/$version definitions are not supported, please use $AUTO_IMPORTED_KOTLIN_LABS_VERSION")
   })
 }
+
+internal val autoLinkedKotlinLabsForeignSchema = ForeignSchema("kotlin_labs", "v0.3", kotlinLabsDefinitions("v0.3"), listOf("optional", "nonnull"))
 
 /**
  * The foreign schemas supported by Apollo Kotlin.
@@ -107,9 +147,12 @@ fun kotlinLabsDefinitions(version: String): List<GQLDefinition> {
 fun builtinForeignSchemas(): List<ForeignSchema> {
   return listOf(
       ForeignSchema("kotlin_labs", "v0.2", kotlinLabsDefinitions("v0.2"), listOf("optional", "nonnull")),
-      ForeignSchema("kotlin_labs", "v0.3", kotlinLabsDefinitions("v0.3"), listOf("optional", "nonnull")),
+      autoLinkedKotlinLabsForeignSchema,
       ForeignSchema("kotlin_labs", "v0.4", kotlinLabsDefinitions("v0.4"), listOf("optional")),
+      ForeignSchema("kotlin_labs", "v0.5", kotlinLabsDefinitions("v0.5"), listOf("optional")),
+      ForeignSchema("kotlin_labs", "v0.6", kotlinLabsDefinitions("v0.6"), listOf("optional")),
       ForeignSchema("nullability", "v0.4", nullabilityDefinitions("v0.4"), listOf("catch")),
+      ForeignSchema("kotlin_compiler_options", "v0.1", definitionsFromString(compilerOptions_0_0 + compilerOptions_0_1_additions), emptyList())
   )
 }
 
@@ -151,22 +194,12 @@ private fun GQLDocument.withoutDefinitions(definitions: List<GQLDefinition>): GQ
   )
 }
 
-internal enum class ConflictResolution {
-  /**
-   * If a definition exists in both left and right, throw an error
-   */
-  Error,
-  //MergeIfSameDefinition,
-  /**
-   * If a definition exists in both left and right, use left always
-   */
-  TakeLeft
-}
-
+/**
+ * Left biased union of [left] and [right]
+ */
 internal fun combineDefinitions(
     left: List<GQLDefinition>,
     right: List<GQLDefinition>,
-    conflictResolution: ConflictResolution,
 ): List<GQLDefinition> {
   val mergedDefinitions = left.toMutableList()
 
@@ -174,24 +207,16 @@ internal fun combineDefinitions(
     check(builtInTypeDefinition is GQLNamed) {
       "only extra named definitions are supported"
     }
-    val existingDefinition = mergedDefinitions.firstOrNull { (it as? GQLNamed)?.name == builtInTypeDefinition.name }
-    if (existingDefinition != null) {
-      if (conflictResolution == ConflictResolution.Error) {
-        error("Apollo: definition '${builtInTypeDefinition.name}' is already in the schema at " +
-            "'${existingDefinition.sourceLocation?.filePath}:${existingDefinition.sourceLocation}'")
-      }
-    } else {
+    val existingDefinition = mergedDefinitions.firstOrNull {
+      builtInTypeDefinition::class == it::class
+          && (it as? GQLNamed)?.name == builtInTypeDefinition.name
+    }
+    if (existingDefinition == null) {
       mergedDefinitions.add(builtInTypeDefinition)
     }
   }
 
   return mergedDefinitions
-}
-
-private fun GQLDocument.withDefinitions(definitions: List<GQLDefinition>): GQLDocument {
-  return copy(
-      definitions = combineDefinitions(this.definitions, definitions, ConflictResolution.TakeLeft)
-  )
 }
 
 

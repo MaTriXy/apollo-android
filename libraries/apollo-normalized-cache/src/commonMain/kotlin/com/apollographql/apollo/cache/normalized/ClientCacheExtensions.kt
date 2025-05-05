@@ -113,44 +113,57 @@ fun ApolloClient.Builder.normalizedCache(
 fun ApolloClient.Builder.logCacheMisses(
     log: (String) -> Unit = { println(it) },
 ): ApolloClient.Builder {
-  check(interceptors.none { it is ApolloCacheInterceptor }) {
-    "Apollo: logCacheMisses() must be called before setting up your normalized cache"
-  }
   return addInterceptor(CacheMissLoggingInterceptor(log))
 }
 
+private class DefaultInterceptorChain(
+    private val interceptors: List<ApolloInterceptor>,
+    private val index: Int,
+) : ApolloInterceptorChain {
+
+  override fun <D : Operation.Data> proceed(request: ApolloRequest<D>): Flow<ApolloResponse<D>> {
+    check(index < interceptors.size)
+    return interceptors[index].intercept(
+        request,
+        DefaultInterceptorChain(
+            interceptors = interceptors,
+            index = index + 1,
+        )
+    )
+  }
+}
+
+private fun ApolloInterceptorChain.asInterceptor(): ApolloInterceptor {
+  return object : ApolloInterceptor {
+    override fun <D : Operation.Data> intercept(
+        request: ApolloRequest<D>,
+        chain: ApolloInterceptorChain,
+    ): Flow<ApolloResponse<D>> {
+     return this@asInterceptor.proceed(request)
+    }
+  }
+}
+internal class CacheInterceptor(val store: ApolloStore): ApolloInterceptor {
+  private val delegates = listOf(
+      WatcherInterceptor(store),
+      FetchPolicyRouterInterceptor,
+      ApolloCacheInterceptor(store)
+  )
+
+  override fun <D : Operation.Data> intercept(
+      request: ApolloRequest<D>,
+      chain: ApolloInterceptorChain,
+  ): Flow<ApolloResponse<D>> {
+    return DefaultInterceptorChain(delegates + chain.asInterceptor(), 0).proceed(request)
+  }
+}
+
+
 fun ApolloClient.Builder.store(store: ApolloStore, writeToCacheAsynchronously: Boolean = false): ApolloClient.Builder {
-  check(interceptors.none { it is AutoPersistedQueryInterceptor }) {
-    "Apollo: the normalized cache must be configured before the auto persisted queries"
-  }
-  // Removing existing interceptors added for configuring an [ApolloStore].
-  // If a builder is reused from an existing client using `newBuilder()` and we try to configure a new `store()` on it, we first need to
-  // remove the old interceptors.
-  val storeInterceptors = interceptors.filterIsInstance<ApolloStoreInterceptor>()
-  storeInterceptors.forEach {
-    removeInterceptor(it)
-  }
-  return addInterceptor(WatcherInterceptor(store))
-      .addInterceptor(FetchPolicyRouterInterceptor)
-      .addInterceptor(ApolloCacheInterceptor(store))
+  return cacheInterceptor(CacheInterceptor(store))
       .writeToCacheAsynchronously(writeToCacheAsynchronously)
       .addExecutionContext(CacheDumpProviderContext(store.cacheDumpProvider()))
 }
-
-@Deprecated(level = DeprecationLevel.ERROR, message = "Exceptions no longer throw", replaceWith = ReplaceWith("watch()"))
-@ApolloDeprecatedSince(v4_0_0)
-@Suppress("UNUSED_PARAMETER")
-fun <D : Query.Data> ApolloCall<D>.watch(
-    fetchThrows: Boolean,
-    refetchThrows: Boolean,
-): Flow<ApolloResponse<D>> = throw UnsupportedOperationException("watch(fetchThrows: Boolean, refetchThrows: Boolean) is no longer supported, use watch() instead")
-
-@Deprecated(level = DeprecationLevel.ERROR, message = "Exceptions no longer throw", replaceWith = ReplaceWith("watch()"))
-@ApolloDeprecatedSince(v4_0_0)
-@Suppress("UNUSED_PARAMETER")
-fun <D : Query.Data> ApolloCall<D>.watch(
-    fetchThrows: Boolean,
-): Flow<ApolloResponse<D>> = throw UnsupportedOperationException("watch(fetchThrows: Boolean, refetchThrows: Boolean) is no longer supported, use watch() instead")
 
 /**
  * Gets initial response(s) then observes the cache for any changes.
@@ -228,9 +241,7 @@ internal fun <D : Query.Data> ApolloCall<D>.watchInternal(data: D?): Flow<Apollo
 
 val ApolloClient.apolloStore: ApolloStore
   get() {
-    return interceptors.firstOrNull { it is ApolloCacheInterceptor }?.let {
-      (it as ApolloCacheInterceptor).store
-    } ?: error("no cache configured")
+    return (cacheInterceptor as? CacheInterceptor ?: error("no cache configured")).store
   }
 
 /**
@@ -289,7 +300,7 @@ fun <T> MutableExecutionOptions<T>.memoryCacheOnly(memoryOnly: Boolean) = addExe
     MemoryCacheOnlyContext(memoryOnly)
 )
 
-@Deprecated("Emitting cache misses is now the default behavior, this method is a no-op", replaceWith = ReplaceWith(""))
+@Deprecated("Emitting cache misses is now the default behavior, this method is a no-op", replaceWith = ReplaceWith(""), level = DeprecationLevel.ERROR)
 @ApolloDeprecatedSince(v4_0_0)
 @Suppress("UNUSED_PARAMETER")
 fun <T> MutableExecutionOptions<T>.emitCacheMisses(emitCacheMisses: Boolean) = this
@@ -670,13 +681,3 @@ fun <D : Operation.Data> ApolloResponse.Builder<D>.cacheHeaders(cacheHeaders: Ca
 
 val <D : Operation.Data> ApolloResponse<D>.cacheHeaders
   get() = executionContext[CacheHeadersContext]?.value ?: CacheHeaders.NONE
-
-/**
- * Gets the result from the cache first and always fetch from the network. Use this to get an early
- * cached result while also updating the network values.
- *
- * Any [FetchPolicy] previously set will be ignored
- */
-@Deprecated("Use fetchPolicy(FetchPolicy.CacheAndNetwork) instead", ReplaceWith("fetchPolicy(FetchPolicy.CacheAndNetwork).toFlow()"), level = DeprecationLevel.ERROR)
-@ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v3_7_5)
-fun <D : Query.Data> ApolloCall<D>.executeCacheAndNetwork(): Flow<ApolloResponse<D>> = TODO()

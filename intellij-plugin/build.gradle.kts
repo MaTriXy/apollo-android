@@ -6,6 +6,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INTERNAL_API_USAGES
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.INVALID_PLUGIN
 import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask.FailureLevel.PLUGIN_STRUCTURE_WARNINGS
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -27,9 +28,9 @@ commonSetup()
 // XXX: this should use the settings repositories instead
 repositories {
   // Uncomment this one to use the Kotlin "dev" repository
-  // maven { url = uri("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev/") }
+  // maven("https://redirector.kotlinlang.org/maven/dev/")
   // Uncomment this one to use the Sonatype OSSRH snapshots repository
-  // maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
+  // maven("https://oss.sonatype.org/content/repositories/snapshots/")
   mavenCentral()
 
   intellijPlatform {
@@ -55,6 +56,9 @@ kotlin {
 }
 
 val apolloDependencies = configurations.create("apolloDependencies").apply {
+  attributes {
+    attribute(KotlinPlatformType.attribute, KotlinPlatformType.jvm)
+  }
   listOf(":apollo-annotations", ":apollo-api", ":apollo-runtime").forEach {
     dependencies.add(project.dependencies.project(it, "jvmApiElements"))
   }
@@ -160,7 +164,9 @@ dependencies {
     bundledPlugins(properties("platformBundledPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
     plugins(properties("platformPlugins").split(',').map(String::trim).filter(String::isNotEmpty))
     instrumentationTools()
-    pluginVerifier()
+    // Use a specific version of the verifier
+    // TODO: remove when https://youtrack.jetbrains.com/issue/MP-7366 is fixed
+    pluginVerifier(version = "1.383")
     testFramework(TestFrameworkType.Plugin.Java)
     zipSigner()
   }
@@ -243,8 +249,9 @@ intellijPlatform {
     }
     failureLevel.set(
         setOf(
-            // TODO: Temporarily disabled due to https://platform.jetbrains.com/t/plugin-verifier-fails-with-plugin-com-intellij-modules-json-not-declared-as-a-plugin-dependency/580
-//            COMPATIBILITY_PROBLEMS,
+            // Temporarily disabled due to https://platform.jetbrains.com/t/plugin-verifier-fails-with-plugin-com-intellij-modules-json-not-declared-as-a-plugin-dependency/580
+            // TODO: Uncomment when https://youtrack.jetbrains.com/issue/MP-7366 is fixed
+            // COMPATIBILITY_PROBLEMS,
             INTERNAL_API_USAGES,
             INVALID_PLUGIN,
             PLUGIN_STRUCTURE_WARNINGS,

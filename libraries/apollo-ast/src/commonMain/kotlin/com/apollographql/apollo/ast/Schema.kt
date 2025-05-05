@@ -58,9 +58,9 @@ class Schema internal constructor(
   )
 
   /**
-   * @param name the current name of the directive (like "kotlin_labs__nonnull")
+   * @param name the current name of the directive (like "kotlin_labs__targetName")
    *
-   * @return the original directive name (like "nonnull")
+   * @return the original directive name (like "targetName") or null if the directive was not linked.
    */
   fun originalDirectiveName(name: String): String {
     return foreignNames["@$name"]?.substring(1) ?: name
@@ -163,13 +163,19 @@ class Schema internal constructor(
   }
 
   /**
-   * List all direct super types (interfaces, unions) implemented by a given object type
+   * List all direct super types (interfaces, unions) implemented by a given object or interface type
    */
-  fun superTypes(objectTypeDefinition: GQLObjectTypeDefinition): Set<String> {
+  fun superTypes(typeDefinition: GQLTypeDefinition): Set<String> {
+    val implementsInterfaces = when(typeDefinition) {
+      is GQLObjectTypeDefinition -> typeDefinition.implementsInterfaces
+      is GQLInterfaceTypeDefinition -> typeDefinition.implementsInterfaces
+      is GQLUnionTypeDefinition -> emptyList()
+      else -> error("Type '${typeDefinition.name}' cannot have a super type.")
+    }
     val unions = typeDefinitions.values.filterIsInstance<GQLUnionTypeDefinition>().filter {
-      it.memberTypes.map { it.name }.toSet().contains(objectTypeDefinition.name)
+      it.memberTypes.map { it.name }.toSet().contains(typeDefinition.name)
     }.map { it.name }
-    return (objectTypeDefinition.implementsInterfaces + unions).toSet()
+    return (implementsInterfaces + unions).toSet()
   }
 
   /**
@@ -179,7 +185,7 @@ class Schema internal constructor(
     val directives = typeDefinitions.values.filterIsInstance<GQLObjectTypeDefinition>().flatMap { it.directives } +
         typeDefinitions.values.filterIsInstance<GQLInterfaceTypeDefinition>().flatMap { it.directives } +
         typeDefinitions.values.filterIsInstance<GQLUnionTypeDefinition>().flatMap { it.directives }
-    return directives.any { it.name == TYPE_POLICY }
+    return directives.any { originalDirectiveName(it.name) == TYPE_POLICY }
   }
 
   /**
@@ -198,7 +204,23 @@ class Schema internal constructor(
     return directivesToStrip.contains(name)
   }
 
+  @ApolloInternal
+  val generateDataBuilders: Boolean
+    get() {
+      return schemaDefinition?.directives?.any { originalDirectiveName(it.name) == GENERATE_DATA_BUILDERS } ?: false
+    }
+
   companion object {
+    @ApolloExperimental
+    const val ONE_OF = "oneOf"
+    @ApolloExperimental
+    const val DEFER = "defer"
+    @ApolloExperimental
+    const val DISABLE_ERROR_PROPAGATION = "experimental_disableErrorPropagation"
+
+    @ApolloExperimental
+    const val LINK = "link"
+
     const val TYPE_POLICY = "typePolicy"
     const val FIELD_POLICY = "fieldPolicy"
     const val NONNULL = "nonnull"
@@ -207,8 +229,6 @@ class Schema internal constructor(
     const val TARGET_NAME = "targetName"
 
     @ApolloExperimental
-    const val ONE_OF = "oneOf"
-    @ApolloExperimental
     const val CATCH = "catch"
     @ApolloExperimental
     const val CATCH_BY_DEFAULT = "catchByDefault"
@@ -216,14 +236,20 @@ class Schema internal constructor(
     const val SEMANTIC_NON_NULL = "semanticNonNull"
     @ApolloExperimental
     const val SEMANTIC_NON_NULL_FIELD = "semanticNonNullField"
-    @ApolloExperimental
-    const val LINK = "link"
 
     const val FIELD_POLICY_FOR_FIELD = "forField"
     const val FIELD_POLICY_KEY_ARGS = "keyArgs"
 
     @ApolloExperimental
     const val FIELD_POLICY_PAGINATION_ARGS = "paginationArgs"
+
+    @ApolloExperimental
+    const val MAP = "map"
+
+    @ApolloExperimental
+    const val MAP_TO = "mapTo"
+
+    private val GENERATE_DATA_BUILDERS = "generateDataBuilders"
 
     /**
      * Parses the given [map] and creates a new [Schema].
@@ -242,14 +268,18 @@ class Schema internal constructor(
     }
 
     internal fun rootOperationTypeDefinition(operationType: String, definitions: List<GQLDefinition>): GQLTypeDefinition? {
-      return definitions.filterIsInstance<GQLSchemaDefinition>().single()
+      return rootOperationTypeDefinition(definitions.filterIsInstance<GQLSchemaDefinition>().single(), operationType, definitions.filterIsInstance<GQLObjectTypeDefinition>().associateBy { it.name })
+    }
+
+    internal fun rootOperationTypeDefinition(schemaTypeDefinition: GQLSchemaDefinition, operationType: String, typeDefinitions: Map<String, GQLTypeDefinition>): GQLTypeDefinition? {
+      return schemaTypeDefinition
           .rootOperationTypeDefinitions
           .singleOrNull {
             it.operationType == operationType
           }
           ?.namedType
           ?.let { namedType ->
-            definitions.filterIsInstance<GQLObjectTypeDefinition>().single { it.name == namedType }
+            typeDefinitions.get(namedType)
           }
     }
   }

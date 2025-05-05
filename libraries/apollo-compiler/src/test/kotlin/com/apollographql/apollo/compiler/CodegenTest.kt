@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION")
+@file:Suppress("DEPRECATION_ERROR")
 
 package com.apollographql.apollo.compiler
 
@@ -19,6 +19,7 @@ import com.apollographql.apollo.compiler.codegen.java.JavaOutput
 import com.apollographql.apollo.compiler.codegen.kotlin.KotlinOutput
 import com.apollographql.apollo.compiler.codegen.writeTo
 import com.apollographql.apollo.compiler.ir.IrOperations
+import com.apollographql.apollo.compiler.operationoutput.OperationId
 import com.google.testing.junit.testparameterinjector.TestParameter
 import com.google.testing.junit.testparameterinjector.TestParameterInjector
 import org.junit.AfterClass
@@ -116,9 +117,9 @@ class CodegenTest {
      */
     val compileDuration = measureTime {
       if (parameters.generateKotlinModels) {
-        KotlinCompiler.assertCompiles(actualFiles.toSet())
+        KotlinCompiler.assertCompiles(actualFiles.filter { it.extension == "java" }.toSet())
       } else {
-        JavaCompiler.assertCompiles(actualFiles.toSet())
+        JavaCompiler.assertCompiles(actualFiles.filter { it.extension == "kt" }.toSet())
       }
     }
 
@@ -255,16 +256,14 @@ class CodegenTest {
         "mutation_create_review", "simple_fragment", "data_builders" -> true
         else -> false
       }
-      val operationIdGenerator = when (folder.name) {
-        "operation_id_generator" -> object : OperationIdGenerator {
-          override fun apply(operationDocument: String, operationName: String): String {
-            return "hash"
+      val operationOutputGenerator = if (folder.name == "operation_id_generator") {
+        OperationIdsGenerator {
+          it.map { value ->
+            OperationId("hash", value.name)
           }
-
-          override val version: String = "1"
         }
-
-        else -> OperationIdGenerator.Sha256
+      } else {
+        null
       }
 
       val generateFragmentImplementations = when (folder.name) {
@@ -272,16 +271,16 @@ class CodegenTest {
         else -> true
       }
 
-
       val generateSchema = folder.name == "__schema"
 
       val schemaFile =
-        folder.listFiles()!!.find { it.isFile && (it.name == "schema.sdl" || it.name == "schema.json" || it.name == "schema.graphqls") }
-            ?: File("src/test/graphql/schema.sdl")
+        folder.listFiles()!!.find { it.isFile && (it.name == "schema.json" || it.name == "schema.graphqls") }
+            ?: File("src/test/graphql/schema.graphqls")
+      val target = if (generateKotlinModels) "kotlin" else "java"
+      val languageSpecificSchemaFile = folder.listFiles()!!.firstOrNull { it.name == "schema.$target.graphqls" }
 
       val graphqlFiles = setOf(File(folder, "TestOperation.graphql"))
 
-      val operationOutputGenerator = OperationOutputGenerator.Default(operationIdGenerator)
 
       val targetLanguage = if (generateKotlinModels) {
         if (folder.name == "enum_field") KOTLIN_1_9 else KOTLIN_1_5
@@ -293,32 +292,6 @@ class CodegenTest {
         folder.name in listOf("capitalized_fields", "companion") -> true
         targetLanguage == JAVA -> true
         else -> false
-      }
-      val scalarMapping = if (folder.name in listOf(
-              "custom_scalar_type",
-              "input_object_type",
-              "mutation_create_review"
-          )
-      ) {
-        if (targetLanguage == JAVA) {
-          mapOf(
-              "Date" to ScalarInfo("java.util.Date"),
-              "URL" to ScalarInfo("java.lang.String", ExpressionAdapterInitializer("com.example.UrlAdapter.INSTANCE")),
-              "ID" to ScalarInfo("java.lang.Long"),
-              "String" to ScalarInfo("java.lang.String", ExpressionAdapterInitializer("new com.example.MyStringAdapter()")),
-              "ListOfString" to ScalarInfo("List<String>"),
-          )
-        } else {
-          mapOf(
-              "Date" to ScalarInfo("java.util.Date"),
-              "URL" to ScalarInfo("kotlin.String", ExpressionAdapterInitializer("com.example.UrlAdapter")),
-              "ID" to ScalarInfo("kotlin.Long"),
-              "String" to ScalarInfo("kotlin.String", ExpressionAdapterInitializer("com.example.MyStringAdapter()")),
-              "ListOfString" to ScalarInfo("List<String?>"),
-          )
-        }
-      } else {
-        emptyMap()
       }
 
       val packageName = "com.example.${folder.name}"
@@ -416,11 +389,12 @@ class CodegenTest {
       )
 
       val (irOperations, sourceOutput) = ApolloCompiler.buildSchemaAndOperationsSourcesAndReturnIrOperations(
-          schemaFiles = setOf(schemaFile).toInputFiles(),
+          schemaFiles = (setOf(schemaFile) + setOfNotNull(languageSpecificSchemaFile)).toInputFiles(),
           executableFiles = graphqlFiles.toInputFiles(),
-          codegenSchemaOptions = buildCodegenSchemaOptions(
-              scalarMapping = scalarMapping,
-              generateDataBuilders = generateDataBuilders
+          codegenSchemaOptions = CodegenSchemaOptions(
+              scalarTypeMapping = emptyMap(),
+              scalarAdapterMapping = emptyMap(),
+              generateDataBuilders = generateDataBuilders,
           ),
           irOptions = buildIrOptions(
               codegenModels = codegenModels,
@@ -428,17 +402,24 @@ class CodegenTest {
               decapitalizeFields = decapitalizeFields,
           ),
           codegenOptions = codegenOptions,
-          operationOutputGenerator = operationOutputGenerator,
+          operationIdsGenerator = operationOutputGenerator,
           logger = null,
           layoutFactory = null,
           operationManifestFile = null,
           irOperationsTransform = null,
           javaOutputTransform = null,
           kotlinOutputTransform = null,
+          generateDataBuilders = generateDataBuilders
       )
 
       sourceOutput.writeTo(outputDir, true, null)
-      irOperations.usedCoordinates.writeTo(File(outputDir, "com/example/used-coordinates.json"))
+
+      File(outputDir, "com/example/used-coordinates.json").let {
+        // mkdirs is required for the 'empty' test
+        it.parentFile.mkdirs()
+        irOperations.usedCoordinates.writeTo(it)
+      }
+
       return outputDir
     }
 
@@ -461,18 +442,20 @@ private fun ApolloCompiler.buildSchemaAndOperationsSourcesAndReturnIrOperations(
     irOptions: IrOptions,
     codegenOptions: CodegenOptions,
     layoutFactory: LayoutFactory?,
-    @Suppress("DEPRECATION") operationOutputGenerator: OperationOutputGenerator?,
+    operationIdsGenerator: OperationIdsGenerator?,
     irOperationsTransform: Transform<IrOperations>?,
     javaOutputTransform: Transform<JavaOutput>?,
     kotlinOutputTransform: Transform<KotlinOutput>?,
     logger: Logger?,
     operationManifestFile: File?,
+    generateDataBuilders: Boolean,
 ): Pair<IrOperations, SourceOutput> {
   val codegenSchema = buildCodegenSchema(
       schemaFiles = schemaFiles,
       logger = logger,
       codegenSchemaOptions = codegenSchemaOptions,
-      foreignSchemas = emptyList()
+      foreignSchemas = emptyList(),
+      null
   )
 
   val irOperations = buildIrOperations(
@@ -485,7 +468,7 @@ private fun ApolloCompiler.buildSchemaAndOperationsSourcesAndReturnIrOperations(
       logger = logger
   )
 
-  val sourceOutput = buildSchemaAndOperationsSourcesFromIr(
+  var sourceOutput = buildSchemaAndOperationsSourcesFromIr(
       codegenSchema = codegenSchema,
       irOperations = irOperations,
       downstreamUsedCoordinates = UsedCoordinates(),
@@ -496,8 +479,18 @@ private fun ApolloCompiler.buildSchemaAndOperationsSourcesAndReturnIrOperations(
       javaOutputTransform = javaOutputTransform,
       kotlinOutputTransform = kotlinOutputTransform,
       operationManifestFile = operationManifestFile,
-      operationOutputGenerator = operationOutputGenerator,
+      operationIdsGenerator = operationIdsGenerator,
   )
+
+  if (generateDataBuilders) {
+    sourceOutput = sourceOutput + buildDataBuilders(
+        codegenSchema = codegenSchema,
+        usedCoordinates = irOperations.usedCoordinates,
+        codegenOptions = codegenOptions,
+        layout = layoutFactory?.create(codegenSchema),
+        upstreamCodegenMetadata = listOf(sourceOutput.codegenMetadata),
+    )
+  }
 
   return irOperations to sourceOutput
 }

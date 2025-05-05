@@ -1,5 +1,5 @@
 // Klib ABI Dump
-// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, macosArm64, macosX64, tvosArm64, tvosSimulatorArm64, tvosX64, wasmJs, watchosArm32, watchosArm64, watchosSimulatorArm64]
+// Targets: [iosArm64, iosSimulatorArm64, iosX64, js, linuxX64.linux, macosArm64, macosX64, tvosArm64, tvosSimulatorArm64, tvosX64, wasmJs, watchosArm32, watchosArm64, watchosSimulatorArm64]
 // Alias: apple => [iosArm64, iosSimulatorArm64, iosX64, macosArm64, macosX64, tvosArm64, tvosSimulatorArm64, tvosX64, watchosArm32, watchosArm64, watchosSimulatorArm64]
 // Alias: ios => [iosArm64, iosSimulatorArm64, iosX64]
 // Alias: macos => [macosArm64, macosX64]
@@ -21,6 +21,10 @@ final enum class com.apollographql.apollo.network.ws/WsFrameType : kotlin/Enum<c
     final fun values(): kotlin/Array<com.apollographql.apollo.network.ws/WsFrameType> // com.apollographql.apollo.network.ws/WsFrameType.values|values#static(){}[0]
 }
 
+abstract interface <#A: com.apollographql.apollo.api/Operation.Data> com.apollographql.apollo.network.websocket/SubscriptionParser { // com.apollographql.apollo.network.websocket/SubscriptionParser|null[0]
+    abstract fun parse(kotlin/Any?): com.apollographql.apollo.api/ApolloResponse<#A>? // com.apollographql.apollo.network.websocket/SubscriptionParser.parse|parse(kotlin.Any?){}[0]
+}
+
 abstract interface com.apollographql.apollo.interceptor/ApolloInterceptor { // com.apollographql.apollo.interceptor/ApolloInterceptor|null[0]
     abstract fun <#A1: com.apollographql.apollo.api/Operation.Data> intercept(com.apollographql.apollo.api/ApolloRequest<#A1>, com.apollographql.apollo.interceptor/ApolloInterceptorChain): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A1>> // com.apollographql.apollo.interceptor/ApolloInterceptor.intercept|intercept(com.apollographql.apollo.api.ApolloRequest<0:0>;com.apollographql.apollo.interceptor.ApolloInterceptorChain){0§<com.apollographql.apollo.api.Operation.Data>}[0]
 }
@@ -32,7 +36,6 @@ abstract interface com.apollographql.apollo.interceptor/ApolloInterceptorChain {
 abstract interface com.apollographql.apollo.network.http/HttpEngine : okio/Closeable { // com.apollographql.apollo.network.http/HttpEngine|null[0]
     abstract suspend fun execute(com.apollographql.apollo.api.http/HttpRequest): com.apollographql.apollo.api.http/HttpResponse // com.apollographql.apollo.network.http/HttpEngine.execute|execute(com.apollographql.apollo.api.http.HttpRequest){}[0]
     open fun close() // com.apollographql.apollo.network.http/HttpEngine.close|close(){}[0]
-    open fun dispose() // com.apollographql.apollo.network.http/HttpEngine.dispose|dispose(){}[0]
 }
 
 abstract interface com.apollographql.apollo.network.http/HttpInterceptor { // com.apollographql.apollo.network.http/HttpInterceptor|null[0]
@@ -42,6 +45,40 @@ abstract interface com.apollographql.apollo.network.http/HttpInterceptor { // co
 
 abstract interface com.apollographql.apollo.network.http/HttpInterceptorChain { // com.apollographql.apollo.network.http/HttpInterceptorChain|null[0]
     abstract suspend fun proceed(com.apollographql.apollo.api.http/HttpRequest): com.apollographql.apollo.api.http/HttpResponse // com.apollographql.apollo.network.http/HttpInterceptorChain.proceed|proceed(com.apollographql.apollo.api.http.HttpRequest){}[0]
+}
+
+abstract interface com.apollographql.apollo.network.websocket/SubscriptionParserFactory { // com.apollographql.apollo.network.websocket/SubscriptionParserFactory|null[0]
+    abstract fun <#A1: com.apollographql.apollo.api/Operation.Data> createParser(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/SubscriptionParser<#A1> // com.apollographql.apollo.network.websocket/SubscriptionParserFactory.createParser|createParser(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+}
+
+abstract interface com.apollographql.apollo.network.websocket/WebSocket { // com.apollographql.apollo.network.websocket/WebSocket|null[0]
+    abstract fun close(kotlin/Int, kotlin/String) // com.apollographql.apollo.network.websocket/WebSocket.close|close(kotlin.Int;kotlin.String){}[0]
+    abstract fun send(kotlin/ByteArray) // com.apollographql.apollo.network.websocket/WebSocket.send|send(kotlin.ByteArray){}[0]
+    abstract fun send(kotlin/String) // com.apollographql.apollo.network.websocket/WebSocket.send|send(kotlin.String){}[0]
+}
+
+abstract interface com.apollographql.apollo.network.websocket/WebSocketEngine : okio/Closeable { // com.apollographql.apollo.network.websocket/WebSocketEngine|null[0]
+    abstract fun newWebSocket(kotlin/String, kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader> = ..., com.apollographql.apollo.network.websocket/WebSocketListener): com.apollographql.apollo.network.websocket/WebSocket // com.apollographql.apollo.network.websocket/WebSocketEngine.newWebSocket|newWebSocket(kotlin.String;kotlin.collections.List<com.apollographql.apollo.api.http.HttpHeader>;com.apollographql.apollo.network.websocket.WebSocketListener){}[0]
+}
+
+abstract interface com.apollographql.apollo.network.websocket/WebSocketListener { // com.apollographql.apollo.network.websocket/WebSocketListener|null[0]
+    abstract fun onClosed(kotlin/Int?, kotlin/String?) // com.apollographql.apollo.network.websocket/WebSocketListener.onClosed|onClosed(kotlin.Int?;kotlin.String?){}[0]
+    abstract fun onError(com.apollographql.apollo.exception/ApolloException) // com.apollographql.apollo.network.websocket/WebSocketListener.onError|onError(com.apollographql.apollo.exception.ApolloException){}[0]
+    abstract fun onMessage(kotlin/ByteArray) // com.apollographql.apollo.network.websocket/WebSocketListener.onMessage|onMessage(kotlin.ByteArray){}[0]
+    abstract fun onMessage(kotlin/String) // com.apollographql.apollo.network.websocket/WebSocketListener.onMessage|onMessage(kotlin.String){}[0]
+    abstract fun onOpen() // com.apollographql.apollo.network.websocket/WebSocketListener.onOpen|onOpen(){}[0]
+}
+
+abstract interface com.apollographql.apollo.network.websocket/WsProtocol { // com.apollographql.apollo.network.websocket/WsProtocol|null[0]
+    abstract val name // com.apollographql.apollo.network.websocket/WsProtocol.name|{}name[0]
+        abstract fun <get-name>(): kotlin/String // com.apollographql.apollo.network.websocket/WsProtocol.name.<get-name>|<get-name>(){}[0]
+
+    abstract fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStop(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/WsProtocol.operationStop|operationStop(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    abstract fun parseServerMessage(kotlin/String): com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/WsProtocol.parseServerMessage|parseServerMessage(kotlin.String){}[0]
+    abstract fun ping(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/WsProtocol.ping|ping(){}[0]
+    abstract fun pong(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/WsProtocol.pong|pong(){}[0]
+    abstract suspend fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStart(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/WsProtocol.operationStart|operationStart(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    abstract suspend fun connectionInit(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/WsProtocol.connectionInit|connectionInit(){}[0]
 }
 
 abstract interface com.apollographql.apollo.network.ws/WebSocketConnection { // com.apollographql.apollo.network.ws/WebSocketConnection|null[0]
@@ -55,10 +92,19 @@ abstract interface com.apollographql.apollo.network.ws/WebSocketEngine { // com.
     abstract suspend fun open(kotlin/String, kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader> = ...): com.apollographql.apollo.network.ws/WebSocketConnection // com.apollographql.apollo.network.ws/WebSocketEngine.open|open(kotlin.String;kotlin.collections.List<com.apollographql.apollo.api.http.HttpHeader>){}[0]
 }
 
+abstract interface com.apollographql.apollo.network/NetworkMonitor : okio/Closeable { // com.apollographql.apollo.network/NetworkMonitor|null[0]
+    abstract val isOnline // com.apollographql.apollo.network/NetworkMonitor.isOnline|{}isOnline[0]
+        abstract fun <get-isOnline>(): kotlinx.coroutines.flow/StateFlow<kotlin/Boolean?> // com.apollographql.apollo.network/NetworkMonitor.isOnline.<get-isOnline>|<get-isOnline>(){}[0]
+}
+
 abstract interface com.apollographql.apollo.network/NetworkTransport { // com.apollographql.apollo.network/NetworkTransport|null[0]
     abstract fun <#A1: com.apollographql.apollo.api/Operation.Data> execute(com.apollographql.apollo.api/ApolloRequest<#A1>): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A1>> // com.apollographql.apollo.network/NetworkTransport.execute|execute(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
     abstract fun dispose() // com.apollographql.apollo.network/NetworkTransport.dispose|dispose(){}[0]
 }
+
+sealed interface com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/ClientMessage|null[0]
+
+sealed interface com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/ServerMessage|null[0]
 
 abstract class com.apollographql.apollo.network.ws/WsProtocol { // com.apollographql.apollo.network.ws/WsProtocol|null[0]
     constructor <init>(com.apollographql.apollo.network.ws/WebSocketConnection, com.apollographql.apollo.network.ws/WsProtocol.Listener) // com.apollographql.apollo.network.ws/WsProtocol.<init>|<init>(com.apollographql.apollo.network.ws.WebSocketConnection;com.apollographql.apollo.network.ws.WsProtocol.Listener){}[0]
@@ -105,14 +151,20 @@ final class <#A: com.apollographql.apollo.api/Operation.Data> com.apollographql.
         final fun <get-enableAutoPersistedQueries>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.enableAutoPersistedQueries.<get-enableAutoPersistedQueries>|<get-enableAutoPersistedQueries>(){}[0]
     final val executionContext // com.apollographql.apollo/ApolloCall.executionContext|{}executionContext[0]
         final fun <get-executionContext>(): com.apollographql.apollo.api/ExecutionContext // com.apollographql.apollo/ApolloCall.executionContext.<get-executionContext>|<get-executionContext>(){}[0]
+    final val failFastIfOffline // com.apollographql.apollo/ApolloCall.failFastIfOffline|{}failFastIfOffline[0]
+        final fun <get-failFastIfOffline>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.failFastIfOffline.<get-failFastIfOffline>|<get-failFastIfOffline>(){}[0]
     final val httpHeaders // com.apollographql.apollo/ApolloCall.httpHeaders|{}httpHeaders[0]
         final fun <get-httpHeaders>(): kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader>? // com.apollographql.apollo/ApolloCall.httpHeaders.<get-httpHeaders>|<get-httpHeaders>(){}[0]
     final val httpMethod // com.apollographql.apollo/ApolloCall.httpMethod|{}httpMethod[0]
         final fun <get-httpMethod>(): com.apollographql.apollo.api.http/HttpMethod? // com.apollographql.apollo/ApolloCall.httpMethod.<get-httpMethod>|<get-httpMethod>(){}[0]
     final val ignoreApolloClientHttpHeaders // com.apollographql.apollo/ApolloCall.ignoreApolloClientHttpHeaders|{}ignoreApolloClientHttpHeaders[0]
         final fun <get-ignoreApolloClientHttpHeaders>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.ignoreApolloClientHttpHeaders.<get-ignoreApolloClientHttpHeaders>|<get-ignoreApolloClientHttpHeaders>(){}[0]
+    final val ignoreUnknownKeys // com.apollographql.apollo/ApolloCall.ignoreUnknownKeys|{}ignoreUnknownKeys[0]
+        final fun <get-ignoreUnknownKeys>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.ignoreUnknownKeys.<get-ignoreUnknownKeys>|<get-ignoreUnknownKeys>(){}[0]
     final val operation // com.apollographql.apollo/ApolloCall.operation|{}operation[0]
         final fun <get-operation>(): com.apollographql.apollo.api/Operation<#A> // com.apollographql.apollo/ApolloCall.operation.<get-operation>|<get-operation>(){}[0]
+    final val retryOnError // com.apollographql.apollo/ApolloCall.retryOnError|{}retryOnError[0]
+        final fun <get-retryOnError>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.retryOnError.<get-retryOnError>|<get-retryOnError>(){}[0]
     final val sendApqExtensions // com.apollographql.apollo/ApolloCall.sendApqExtensions|{}sendApqExtensions[0]
         final fun <get-sendApqExtensions>(): kotlin/Boolean? // com.apollographql.apollo/ApolloCall.sendApqExtensions.<get-sendApqExtensions>|<get-sendApqExtensions>(){}[0]
     final val sendDocument // com.apollographql.apollo/ApolloCall.sendDocument|{}sendDocument[0]
@@ -127,12 +179,12 @@ final class <#A: com.apollographql.apollo.api/Operation.Data> com.apollographql.
     final fun httpHeaders(kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader>?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.httpHeaders|httpHeaders(kotlin.collections.List<com.apollographql.apollo.api.http.HttpHeader>?){}[0]
     final fun httpMethod(com.apollographql.apollo.api.http/HttpMethod?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.httpMethod|httpMethod(com.apollographql.apollo.api.http.HttpMethod?){}[0]
     final fun ignoreApolloClientHttpHeaders(kotlin/Boolean?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.ignoreApolloClientHttpHeaders|ignoreApolloClientHttpHeaders(kotlin.Boolean?){}[0]
+    final fun ignoreUnknownKeys(kotlin/Boolean?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.ignoreUnknownKeys|ignoreUnknownKeys(kotlin.Boolean?){}[0]
+    final fun retryOnError(kotlin/Boolean?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.retryOnError|retryOnError(kotlin.Boolean?){}[0]
     final fun sendApqExtensions(kotlin/Boolean?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.sendApqExtensions|sendApqExtensions(kotlin.Boolean?){}[0]
     final fun sendDocument(kotlin/Boolean?): com.apollographql.apollo/ApolloCall<#A> // com.apollographql.apollo/ApolloCall.sendDocument|sendDocument(kotlin.Boolean?){}[0]
     final fun toFlow(): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A>> // com.apollographql.apollo/ApolloCall.toFlow|toFlow(){}[0]
-    final fun toFlowV3(): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A>> // com.apollographql.apollo/ApolloCall.toFlowV3|toFlowV3(){}[0]
     final suspend fun execute(): com.apollographql.apollo.api/ApolloResponse<#A> // com.apollographql.apollo/ApolloCall.execute|execute(){}[0]
-    final suspend fun executeV3(): com.apollographql.apollo.api/ApolloResponse<#A> // com.apollographql.apollo/ApolloCall.executeV3|executeV3(){}[0]
 }
 
 final class com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor : com.apollographql.apollo.interceptor/ApolloInterceptor { // com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor|null[0]
@@ -145,6 +197,45 @@ final class com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor :
             final fun <get-PROTOCOL_NEGOTIATION_ERROR_NOT_SUPPORTED>(): kotlin/String // com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor.Companion.PROTOCOL_NEGOTIATION_ERROR_NOT_SUPPORTED.<get-PROTOCOL_NEGOTIATION_ERROR_NOT_SUPPORTED>|<get-PROTOCOL_NEGOTIATION_ERROR_NOT_SUPPORTED>(){}[0]
         final const val PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND // com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor.Companion.PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND|{}PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND[0]
             final fun <get-PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND>(): kotlin/String // com.apollographql.apollo.interceptor/AutoPersistedQueryInterceptor.Companion.PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND.<get-PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND>|<get-PROTOCOL_NEGOTIATION_ERROR_QUERY_NOT_FOUND>(){}[0]
+    }
+}
+
+final class com.apollographql.apollo.internal/DeferredJsonMerger { // com.apollographql.apollo.internal/DeferredJsonMerger|null[0]
+    constructor <init>() // com.apollographql.apollo.internal/DeferredJsonMerger.<init>|<init>(){}[0]
+
+    final val merged // com.apollographql.apollo.internal/DeferredJsonMerger.merged|{}merged[0]
+        final fun <get-merged>(): kotlin.collections/Map<kotlin/String, kotlin/Any?> // com.apollographql.apollo.internal/DeferredJsonMerger.merged.<get-merged>|<get-merged>(){}[0]
+    final val mergedFragmentIds // com.apollographql.apollo.internal/DeferredJsonMerger.mergedFragmentIds|{}mergedFragmentIds[0]
+        final fun <get-mergedFragmentIds>(): kotlin.collections/Set<com.apollographql.apollo.api/DeferredFragmentIdentifier> // com.apollographql.apollo.internal/DeferredJsonMerger.mergedFragmentIds.<get-mergedFragmentIds>|<get-mergedFragmentIds>(){}[0]
+
+    final var hasNext // com.apollographql.apollo.internal/DeferredJsonMerger.hasNext|{}hasNext[0]
+        final fun <get-hasNext>(): kotlin/Boolean // com.apollographql.apollo.internal/DeferredJsonMerger.hasNext.<get-hasNext>|<get-hasNext>(){}[0]
+    final var isEmptyPayload // com.apollographql.apollo.internal/DeferredJsonMerger.isEmptyPayload|{}isEmptyPayload[0]
+        final fun <get-isEmptyPayload>(): kotlin/Boolean // com.apollographql.apollo.internal/DeferredJsonMerger.isEmptyPayload.<get-isEmptyPayload>|<get-isEmptyPayload>(){}[0]
+
+    final fun merge(kotlin.collections/Map<kotlin/String, kotlin/Any?>): kotlin.collections/Map<kotlin/String, kotlin/Any?> // com.apollographql.apollo.internal/DeferredJsonMerger.merge|merge(kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
+    final fun merge(okio/BufferedSource): kotlin.collections/Map<kotlin/String, kotlin/Any?> // com.apollographql.apollo.internal/DeferredJsonMerger.merge|merge(okio.BufferedSource){}[0]
+    final fun reset() // com.apollographql.apollo.internal/DeferredJsonMerger.reset|reset(){}[0]
+}
+
+final class com.apollographql.apollo.internal/MultipartReader : okio/Closeable { // com.apollographql.apollo.internal/MultipartReader|null[0]
+    constructor <init>(okio/BufferedSource, kotlin/String) // com.apollographql.apollo.internal/MultipartReader.<init>|<init>(okio.BufferedSource;kotlin.String){}[0]
+
+    final val boundary // com.apollographql.apollo.internal/MultipartReader.boundary|{}boundary[0]
+        final fun <get-boundary>(): kotlin/String // com.apollographql.apollo.internal/MultipartReader.boundary.<get-boundary>|<get-boundary>(){}[0]
+
+    final fun close() // com.apollographql.apollo.internal/MultipartReader.close|close(){}[0]
+    final fun nextPart(): com.apollographql.apollo.internal/MultipartReader.Part? // com.apollographql.apollo.internal/MultipartReader.nextPart|nextPart(){}[0]
+
+    final class Part : okio/Closeable { // com.apollographql.apollo.internal/MultipartReader.Part|null[0]
+        constructor <init>(kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader>, okio/BufferedSource) // com.apollographql.apollo.internal/MultipartReader.Part.<init>|<init>(kotlin.collections.List<com.apollographql.apollo.api.http.HttpHeader>;okio.BufferedSource){}[0]
+
+        final val body // com.apollographql.apollo.internal/MultipartReader.Part.body|{}body[0]
+            final fun <get-body>(): okio/BufferedSource // com.apollographql.apollo.internal/MultipartReader.Part.body.<get-body>|<get-body>(){}[0]
+        final val headers // com.apollographql.apollo.internal/MultipartReader.Part.headers|{}headers[0]
+            final fun <get-headers>(): kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader> // com.apollographql.apollo.internal/MultipartReader.Part.headers.<get-headers>|<get-headers>(){}[0]
+
+        final fun close() // com.apollographql.apollo.internal/MultipartReader.Part.close|close(){}[0]
     }
 }
 
@@ -218,7 +309,6 @@ final class com.apollographql.apollo.network.http/HttpNetworkTransport : com.apo
         final fun <get-interceptors>(): kotlin.collections/List<com.apollographql.apollo.network.http/HttpInterceptor> // com.apollographql.apollo.network.http/HttpNetworkTransport.interceptors.<get-interceptors>|<get-interceptors>(){}[0]
 
     final fun <#A1: com.apollographql.apollo.api/Operation.Data> execute(com.apollographql.apollo.api/ApolloRequest<#A1>): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A1>> // com.apollographql.apollo.network.http/HttpNetworkTransport.execute|execute(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
-    final fun <#A1: com.apollographql.apollo.api/Operation.Data> execute(com.apollographql.apollo.api/ApolloRequest<#A1>, com.apollographql.apollo.api.http/HttpRequest, com.apollographql.apollo.api/CustomScalarAdapters): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A1>> // com.apollographql.apollo.network.http/HttpNetworkTransport.execute|execute(com.apollographql.apollo.api.ApolloRequest<0:0>;com.apollographql.apollo.api.http.HttpRequest;com.apollographql.apollo.api.CustomScalarAdapters){0§<com.apollographql.apollo.api.Operation.Data>}[0]
     final fun dispose() // com.apollographql.apollo.network.http/HttpNetworkTransport.dispose|dispose(){}[0]
     final fun newBuilder(): com.apollographql.apollo.network.http/HttpNetworkTransport.Builder // com.apollographql.apollo.network.http/HttpNetworkTransport.newBuilder|newBuilder(){}[0]
 
@@ -260,6 +350,130 @@ final class com.apollographql.apollo.network.http/LoggingInterceptor : com.apoll
 
         final fun valueOf(kotlin/String): com.apollographql.apollo.network.http/LoggingInterceptor.Level // com.apollographql.apollo.network.http/LoggingInterceptor.Level.valueOf|valueOf#static(kotlin.String){}[0]
         final fun values(): kotlin/Array<com.apollographql.apollo.network.http/LoggingInterceptor.Level> // com.apollographql.apollo.network.http/LoggingInterceptor.Level.values|values#static(){}[0]
+    }
+}
+
+final class com.apollographql.apollo.network.websocket/AppSyncWsProtocol : com.apollographql.apollo.network.websocket/WsProtocol { // com.apollographql.apollo.network.websocket/AppSyncWsProtocol|null[0]
+    constructor <init>(kotlin.coroutines/SuspendFunction0<kotlin/Any?> = ...) // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.<init>|<init>(kotlin.coroutines.SuspendFunction0<kotlin.Any?>){}[0]
+
+    final val authorization // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.authorization|{}authorization[0]
+        final fun <get-authorization>(): kotlin.coroutines/SuspendFunction0<kotlin/Any?> // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.authorization.<get-authorization>|<get-authorization>(){}[0]
+    final val name // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.name|{}name[0]
+        final fun <get-name>(): kotlin/String // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.name.<get-name>|<get-name>(){}[0]
+
+    final fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStop(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.operationStop|operationStop(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final fun parseServerMessage(kotlin/String): com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.parseServerMessage|parseServerMessage(kotlin.String){}[0]
+    final fun ping(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.ping|ping(){}[0]
+    final fun pong(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.pong|pong(){}[0]
+    final suspend fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStart(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.operationStart|operationStart(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final suspend fun connectionInit(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.connectionInit|connectionInit(){}[0]
+
+    final object Companion { // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.Companion|null[0]
+        final fun buildUrl(kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Any?>, kotlin.collections/Map<kotlin/String, kotlin/Any?> = ...): kotlin/String // com.apollographql.apollo.network.websocket/AppSyncWsProtocol.Companion.buildUrl|buildUrl(kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.Any?>;kotlin.collections.Map<kotlin.String,kotlin.Any?>){}[0]
+    }
+}
+
+final class com.apollographql.apollo.network.websocket/CompleteServerMessage : com.apollographql.apollo.network.websocket/ServerMessage { // com.apollographql.apollo.network.websocket/CompleteServerMessage|null[0]
+    constructor <init>(kotlin/String) // com.apollographql.apollo.network.websocket/CompleteServerMessage.<init>|<init>(kotlin.String){}[0]
+
+    final val id // com.apollographql.apollo.network.websocket/CompleteServerMessage.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.apollographql.apollo.network.websocket/CompleteServerMessage.id.<get-id>|<get-id>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/ConnectionErrorServerMessage : com.apollographql.apollo.network.websocket/ServerMessage { // com.apollographql.apollo.network.websocket/ConnectionErrorServerMessage|null[0]
+    constructor <init>(kotlin/Any?) // com.apollographql.apollo.network.websocket/ConnectionErrorServerMessage.<init>|<init>(kotlin.Any?){}[0]
+
+    final val payload // com.apollographql.apollo.network.websocket/ConnectionErrorServerMessage.payload|{}payload[0]
+        final fun <get-payload>(): kotlin/Any? // com.apollographql.apollo.network.websocket/ConnectionErrorServerMessage.payload.<get-payload>|<get-payload>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/DataClientMessage : com.apollographql.apollo.network.websocket/ClientMessage { // com.apollographql.apollo.network.websocket/DataClientMessage|null[0]
+    constructor <init>(kotlin/ByteArray) // com.apollographql.apollo.network.websocket/DataClientMessage.<init>|<init>(kotlin.ByteArray){}[0]
+
+    final val data // com.apollographql.apollo.network.websocket/DataClientMessage.data|{}data[0]
+        final fun <get-data>(): kotlin/ByteArray // com.apollographql.apollo.network.websocket/DataClientMessage.data.<get-data>|<get-data>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/GraphQLWsProtocol : com.apollographql.apollo.network.websocket/WsProtocol { // com.apollographql.apollo.network.websocket/GraphQLWsProtocol|null[0]
+    constructor <init>(kotlin.coroutines/SuspendFunction0<kotlin/Any?> = ...) // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.<init>|<init>(kotlin.coroutines.SuspendFunction0<kotlin.Any?>){}[0]
+
+    final val connectionPayload // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.connectionPayload|{}connectionPayload[0]
+        final fun <get-connectionPayload>(): kotlin.coroutines/SuspendFunction0<kotlin/Any?> // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.connectionPayload.<get-connectionPayload>|<get-connectionPayload>(){}[0]
+    final val name // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.name|{}name[0]
+        final fun <get-name>(): kotlin/String // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.name.<get-name>|<get-name>(){}[0]
+
+    final fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStop(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.operationStop|operationStop(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final fun parseServerMessage(kotlin/String): com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.parseServerMessage|parseServerMessage(kotlin.String){}[0]
+    final fun ping(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.ping|ping(){}[0]
+    final fun pong(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.pong|pong(){}[0]
+    final suspend fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStart(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.operationStart|operationStart(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final suspend fun connectionInit(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/GraphQLWsProtocol.connectionInit|connectionInit(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/OperationErrorServerMessage : com.apollographql.apollo.network.websocket/ServerMessage { // com.apollographql.apollo.network.websocket/OperationErrorServerMessage|null[0]
+    constructor <init>(kotlin/String, kotlin/Any?) // com.apollographql.apollo.network.websocket/OperationErrorServerMessage.<init>|<init>(kotlin.String;kotlin.Any?){}[0]
+
+    final val id // com.apollographql.apollo.network.websocket/OperationErrorServerMessage.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.apollographql.apollo.network.websocket/OperationErrorServerMessage.id.<get-id>|<get-id>(){}[0]
+    final val payload // com.apollographql.apollo.network.websocket/OperationErrorServerMessage.payload|{}payload[0]
+        final fun <get-payload>(): kotlin/Any? // com.apollographql.apollo.network.websocket/OperationErrorServerMessage.payload.<get-payload>|<get-payload>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/ParseErrorServerMessage : com.apollographql.apollo.network.websocket/ServerMessage { // com.apollographql.apollo.network.websocket/ParseErrorServerMessage|null[0]
+    constructor <init>(kotlin/String) // com.apollographql.apollo.network.websocket/ParseErrorServerMessage.<init>|<init>(kotlin.String){}[0]
+
+    final val errorMessage // com.apollographql.apollo.network.websocket/ParseErrorServerMessage.errorMessage|{}errorMessage[0]
+        final fun <get-errorMessage>(): kotlin/String // com.apollographql.apollo.network.websocket/ParseErrorServerMessage.errorMessage.<get-errorMessage>|<get-errorMessage>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/ResponseServerMessage : com.apollographql.apollo.network.websocket/ServerMessage { // com.apollographql.apollo.network.websocket/ResponseServerMessage|null[0]
+    constructor <init>(kotlin/String, kotlin/Any?) // com.apollographql.apollo.network.websocket/ResponseServerMessage.<init>|<init>(kotlin.String;kotlin.Any?){}[0]
+
+    final val id // com.apollographql.apollo.network.websocket/ResponseServerMessage.id|{}id[0]
+        final fun <get-id>(): kotlin/String // com.apollographql.apollo.network.websocket/ResponseServerMessage.id.<get-id>|<get-id>(){}[0]
+    final val response // com.apollographql.apollo.network.websocket/ResponseServerMessage.response|{}response[0]
+        final fun <get-response>(): kotlin/Any? // com.apollographql.apollo.network.websocket/ResponseServerMessage.response.<get-response>|<get-response>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/SubscriptionWsProtocol : com.apollographql.apollo.network.websocket/WsProtocol { // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol|null[0]
+    constructor <init>(kotlin.coroutines/SuspendFunction0<kotlin/Any?> = ...) // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.<init>|<init>(kotlin.coroutines.SuspendFunction0<kotlin.Any?>){}[0]
+
+    final val connectionPayload // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.connectionPayload|{}connectionPayload[0]
+        final fun <get-connectionPayload>(): kotlin.coroutines/SuspendFunction0<kotlin/Any?> // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.connectionPayload.<get-connectionPayload>|<get-connectionPayload>(){}[0]
+    final val name // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.name|{}name[0]
+        final fun <get-name>(): kotlin/String // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.name.<get-name>|<get-name>(){}[0]
+
+    final fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStop(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.operationStop|operationStop(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final fun parseServerMessage(kotlin/String): com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.parseServerMessage|parseServerMessage(kotlin.String){}[0]
+    final fun ping(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.ping|ping(){}[0]
+    final fun pong(): com.apollographql.apollo.network.websocket/ClientMessage? // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.pong|pong(){}[0]
+    final suspend fun <#A1: com.apollographql.apollo.api/Operation.Data> operationStart(com.apollographql.apollo.api/ApolloRequest<#A1>): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.operationStart|operationStart(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final suspend fun connectionInit(): com.apollographql.apollo.network.websocket/ClientMessage // com.apollographql.apollo.network.websocket/SubscriptionWsProtocol.connectionInit|connectionInit(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/TextClientMessage : com.apollographql.apollo.network.websocket/ClientMessage { // com.apollographql.apollo.network.websocket/TextClientMessage|null[0]
+    constructor <init>(kotlin/String) // com.apollographql.apollo.network.websocket/TextClientMessage.<init>|<init>(kotlin.String){}[0]
+
+    final val text // com.apollographql.apollo.network.websocket/TextClientMessage.text|{}text[0]
+        final fun <get-text>(): kotlin/String // com.apollographql.apollo.network.websocket/TextClientMessage.text.<get-text>|<get-text>(){}[0]
+}
+
+final class com.apollographql.apollo.network.websocket/WebSocketNetworkTransport : com.apollographql.apollo.network/NetworkTransport { // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport|null[0]
+    final fun <#A1: com.apollographql.apollo.api/Operation.Data> execute(com.apollographql.apollo.api/ApolloRequest<#A1>): kotlinx.coroutines.flow/Flow<com.apollographql.apollo.api/ApolloResponse<#A1>> // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.execute|execute(com.apollographql.apollo.api.ApolloRequest<0:0>){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+    final fun closeConnection(com.apollographql.apollo.exception/ApolloException) // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.closeConnection|closeConnection(com.apollographql.apollo.exception.ApolloException){}[0]
+    final fun dispose() // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.dispose|dispose(){}[0]
+
+    final class Builder { // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder|null[0]
+        constructor <init>() // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.<init>|<init>(){}[0]
+
+        final fun build(): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.build|build(){}[0]
+        final fun connectionAcknowledgeTimeout(kotlin.time/Duration?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.connectionAcknowledgeTimeout|connectionAcknowledgeTimeout(kotlin.time.Duration?){}[0]
+        final fun idleTimeout(kotlin.time/Duration?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.idleTimeout|idleTimeout(kotlin.time.Duration?){}[0]
+        final fun parserFactory(com.apollographql.apollo.network.websocket/SubscriptionParserFactory?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.parserFactory|parserFactory(com.apollographql.apollo.network.websocket.SubscriptionParserFactory?){}[0]
+        final fun pingInterval(kotlin.time/Duration?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.pingInterval|pingInterval(kotlin.time.Duration?){}[0]
+        final fun serverUrl(kotlin/String?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.serverUrl|serverUrl(kotlin.String?){}[0]
+        final fun webSocketEngine(com.apollographql.apollo.network.websocket/WebSocketEngine?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.webSocketEngine|webSocketEngine(com.apollographql.apollo.network.websocket.WebSocketEngine?){}[0]
+        final fun wsProtocol(com.apollographql.apollo.network.websocket/WsProtocol?): com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder // com.apollographql.apollo.network.websocket/WebSocketNetworkTransport.Builder.wsProtocol|wsProtocol(com.apollographql.apollo.network.websocket.WsProtocol?){}[0]
     }
 }
 
@@ -312,7 +526,14 @@ final class com.apollographql.apollo.network.ws/GraphQLWsProtocol : com.apollogr
         final val name // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.name|{}name[0]
             final fun <get-name>(): kotlin/String // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.name.<get-name>|<get-name>(){}[0]
 
+        final fun connectionAcknowledgeTimeoutMillis(kotlin/Long) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.connectionAcknowledgeTimeoutMillis|connectionAcknowledgeTimeoutMillis(kotlin.Long){}[0]
+        final fun connectionPayload(kotlin.coroutines/SuspendFunction0<kotlin.collections/Map<kotlin/String, kotlin/Any?>>) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.connectionPayload|connectionPayload(kotlin.coroutines.SuspendFunction0<kotlin.collections.Map<kotlin.String,kotlin.Any?>>){}[0]
         final fun create(com.apollographql.apollo.network.ws/WebSocketConnection, com.apollographql.apollo.network.ws/WsProtocol.Listener, kotlinx.coroutines/CoroutineScope): com.apollographql.apollo.network.ws/WsProtocol // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.create|create(com.apollographql.apollo.network.ws.WebSocketConnection;com.apollographql.apollo.network.ws.WsProtocol.Listener;kotlinx.coroutines.CoroutineScope){}[0]
+        final fun frameType(com.apollographql.apollo.network.ws/WsFrameType) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.frameType|frameType(com.apollographql.apollo.network.ws.WsFrameType){}[0]
+        final fun pingIntervalMillis(kotlin/Long) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.pingIntervalMillis|pingIntervalMillis(kotlin.Long){}[0]
+        final fun pingPayload(kotlin.collections/Map<kotlin/String, kotlin/Any?>?) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.pingPayload|pingPayload(kotlin.collections.Map<kotlin.String,kotlin.Any?>?){}[0]
+        final fun pongPayload(kotlin.collections/Map<kotlin/String, kotlin/Any?>?) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.pongPayload|pongPayload(kotlin.collections.Map<kotlin.String,kotlin.Any?>?){}[0]
+        final fun webSocketPayloadComposer(com.apollographql.apollo.api.http/WebSocketPayloadComposer) // com.apollographql.apollo.network.ws/GraphQLWsProtocol.Factory.webSocketPayloadComposer|webSocketPayloadComposer(com.apollographql.apollo.api.http.WebSocketPayloadComposer){}[0]
     }
 }
 
@@ -359,6 +580,8 @@ final class com.apollographql.apollo.network.ws/WebSocketNetworkTransport : com.
 }
 
 final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api/ExecutionOptions, okio/Closeable { // com.apollographql.apollo/ApolloClient|null[0]
+    final val cacheInterceptor // com.apollographql.apollo/ApolloClient.cacheInterceptor|{}cacheInterceptor[0]
+        final fun <get-cacheInterceptor>(): com.apollographql.apollo.interceptor/ApolloInterceptor? // com.apollographql.apollo/ApolloClient.cacheInterceptor.<get-cacheInterceptor>|<get-cacheInterceptor>(){}[0]
     final val canBeBatched // com.apollographql.apollo/ApolloClient.canBeBatched|{}canBeBatched[0]
         final fun <get-canBeBatched>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.canBeBatched.<get-canBeBatched>|<get-canBeBatched>(){}[0]
     final val customScalarAdapters // com.apollographql.apollo/ApolloClient.customScalarAdapters|{}customScalarAdapters[0]
@@ -371,6 +594,8 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
         final fun <get-httpHeaders>(): kotlin.collections/List<com.apollographql.apollo.api.http/HttpHeader>? // com.apollographql.apollo/ApolloClient.httpHeaders.<get-httpHeaders>|<get-httpHeaders>(){}[0]
     final val httpMethod // com.apollographql.apollo/ApolloClient.httpMethod|{}httpMethod[0]
         final fun <get-httpMethod>(): com.apollographql.apollo.api.http/HttpMethod? // com.apollographql.apollo/ApolloClient.httpMethod.<get-httpMethod>|<get-httpMethod>(){}[0]
+    final val ignoreUnknownKeys // com.apollographql.apollo/ApolloClient.ignoreUnknownKeys|{}ignoreUnknownKeys[0]
+        final fun <get-ignoreUnknownKeys>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.ignoreUnknownKeys.<get-ignoreUnknownKeys>|<get-ignoreUnknownKeys>(){}[0]
     final val interceptors // com.apollographql.apollo/ApolloClient.interceptors|{}interceptors[0]
         final fun <get-interceptors>(): kotlin.collections/List<com.apollographql.apollo.interceptor/ApolloInterceptor> // com.apollographql.apollo/ApolloClient.interceptors.<get-interceptors>|<get-interceptors>(){}[0]
     final val networkTransport // com.apollographql.apollo/ApolloClient.networkTransport|{}networkTransport[0]
@@ -387,7 +612,6 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
     final fun <#A1: com.apollographql.apollo.api/Query.Data> query(com.apollographql.apollo.api/Query<#A1>): com.apollographql.apollo/ApolloCall<#A1> // com.apollographql.apollo/ApolloClient.query|query(com.apollographql.apollo.api.Query<0:0>){0§<com.apollographql.apollo.api.Query.Data>}[0]
     final fun <#A1: com.apollographql.apollo.api/Subscription.Data> subscription(com.apollographql.apollo.api/Subscription<#A1>): com.apollographql.apollo/ApolloCall<#A1> // com.apollographql.apollo/ApolloClient.subscription|subscription(com.apollographql.apollo.api.Subscription<0:0>){0§<com.apollographql.apollo.api.Subscription.Data>}[0]
     final fun close() // com.apollographql.apollo/ApolloClient.close|close(){}[0]
-    final fun dispose() // com.apollographql.apollo/ApolloClient.dispose|dispose(){}[0]
     final fun newBuilder(): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.newBuilder|newBuilder(){}[0]
 
     final class Builder : com.apollographql.apollo.api/MutableExecutionOptions<com.apollographql.apollo/ApolloClient.Builder> { // com.apollographql.apollo/ApolloClient.Builder|null[0]
@@ -400,6 +624,10 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
         final val interceptors // com.apollographql.apollo/ApolloClient.Builder.interceptors|{}interceptors[0]
             final fun <get-interceptors>(): kotlin.collections/List<com.apollographql.apollo.interceptor/ApolloInterceptor> // com.apollographql.apollo/ApolloClient.Builder.interceptors.<get-interceptors>|<get-interceptors>(){}[0]
 
+        final var autoPersistedQueryInterceptor // com.apollographql.apollo/ApolloClient.Builder.autoPersistedQueryInterceptor|{}autoPersistedQueryInterceptor[0]
+            final fun <get-autoPersistedQueryInterceptor>(): com.apollographql.apollo.interceptor/ApolloInterceptor? // com.apollographql.apollo/ApolloClient.Builder.autoPersistedQueryInterceptor.<get-autoPersistedQueryInterceptor>|<get-autoPersistedQueryInterceptor>(){}[0]
+        final var cacheInterceptor // com.apollographql.apollo/ApolloClient.Builder.cacheInterceptor|{}cacheInterceptor[0]
+            final fun <get-cacheInterceptor>(): com.apollographql.apollo.interceptor/ApolloInterceptor? // com.apollographql.apollo/ApolloClient.Builder.cacheInterceptor.<get-cacheInterceptor>|<get-cacheInterceptor>(){}[0]
         final var canBeBatched // com.apollographql.apollo/ApolloClient.Builder.canBeBatched|{}canBeBatched[0]
             final fun <get-canBeBatched>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.Builder.canBeBatched.<get-canBeBatched>|<get-canBeBatched>(){}[0]
         final var dispatcher // com.apollographql.apollo/ApolloClient.Builder.dispatcher|{}dispatcher[0]
@@ -408,6 +636,8 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
             final fun <get-enableAutoPersistedQueries>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.Builder.enableAutoPersistedQueries.<get-enableAutoPersistedQueries>|<get-enableAutoPersistedQueries>(){}[0]
         final var executionContext // com.apollographql.apollo/ApolloClient.Builder.executionContext|{}executionContext[0]
             final fun <get-executionContext>(): com.apollographql.apollo.api/ExecutionContext // com.apollographql.apollo/ApolloClient.Builder.executionContext.<get-executionContext>|<get-executionContext>(){}[0]
+        final var failFastIfOffline // com.apollographql.apollo/ApolloClient.Builder.failFastIfOffline|{}failFastIfOffline[0]
+            final fun <get-failFastIfOffline>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.Builder.failFastIfOffline.<get-failFastIfOffline>|<get-failFastIfOffline>(){}[0]
         final var httpEngine // com.apollographql.apollo/ApolloClient.Builder.httpEngine|{}httpEngine[0]
             final fun <get-httpEngine>(): com.apollographql.apollo.network.http/HttpEngine? // com.apollographql.apollo/ApolloClient.Builder.httpEngine.<get-httpEngine>|<get-httpEngine>(){}[0]
         final var httpExposeErrorBody // com.apollographql.apollo/ApolloClient.Builder.httpExposeErrorBody|{}httpExposeErrorBody[0]
@@ -418,8 +648,14 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
             final fun <get-httpMethod>(): com.apollographql.apollo.api.http/HttpMethod? // com.apollographql.apollo/ApolloClient.Builder.httpMethod.<get-httpMethod>|<get-httpMethod>(){}[0]
         final var httpServerUrl // com.apollographql.apollo/ApolloClient.Builder.httpServerUrl|{}httpServerUrl[0]
             final fun <get-httpServerUrl>(): kotlin/String? // com.apollographql.apollo/ApolloClient.Builder.httpServerUrl.<get-httpServerUrl>|<get-httpServerUrl>(){}[0]
+        final var ignoreUnknownKeys // com.apollographql.apollo/ApolloClient.Builder.ignoreUnknownKeys|{}ignoreUnknownKeys[0]
+            final fun <get-ignoreUnknownKeys>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.Builder.ignoreUnknownKeys.<get-ignoreUnknownKeys>|<get-ignoreUnknownKeys>(){}[0]
         final var networkTransport // com.apollographql.apollo/ApolloClient.Builder.networkTransport|{}networkTransport[0]
             final fun <get-networkTransport>(): com.apollographql.apollo.network/NetworkTransport? // com.apollographql.apollo/ApolloClient.Builder.networkTransport.<get-networkTransport>|<get-networkTransport>(){}[0]
+        final var retryOnError // com.apollographql.apollo/ApolloClient.Builder.retryOnError|{}retryOnError[0]
+            final fun <get-retryOnError>(): kotlin/Function1<com.apollographql.apollo.api/ApolloRequest<*>, kotlin/Boolean>? // com.apollographql.apollo/ApolloClient.Builder.retryOnError.<get-retryOnError>|<get-retryOnError>(){}[0]
+        final var retryOnErrorInterceptor // com.apollographql.apollo/ApolloClient.Builder.retryOnErrorInterceptor|{}retryOnErrorInterceptor[0]
+            final fun <get-retryOnErrorInterceptor>(): com.apollographql.apollo.interceptor/ApolloInterceptor? // com.apollographql.apollo/ApolloClient.Builder.retryOnErrorInterceptor.<get-retryOnErrorInterceptor>|<get-retryOnErrorInterceptor>(){}[0]
         final var sendApqExtensions // com.apollographql.apollo/ApolloClient.Builder.sendApqExtensions|{}sendApqExtensions[0]
             final fun <get-sendApqExtensions>(): kotlin/Boolean? // com.apollographql.apollo/ApolloClient.Builder.sendApqExtensions.<get-sendApqExtensions>|<get-sendApqExtensions>(){}[0]
         final var sendDocument // com.apollographql.apollo/ApolloClient.Builder.sendDocument|{}sendDocument[0]
@@ -446,13 +682,16 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
         final fun addInterceptor(com.apollographql.apollo.interceptor/ApolloInterceptor): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.addInterceptor|addInterceptor(com.apollographql.apollo.interceptor.ApolloInterceptor){}[0]
         final fun addInterceptors(kotlin.collections/List<com.apollographql.apollo.interceptor/ApolloInterceptor>): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.addInterceptors|addInterceptors(kotlin.collections.List<com.apollographql.apollo.interceptor.ApolloInterceptor>){}[0]
         final fun autoPersistedQueries(com.apollographql.apollo.api.http/HttpMethod = ..., com.apollographql.apollo.api.http/HttpMethod = ..., kotlin/Boolean = ...): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.autoPersistedQueries|autoPersistedQueries(com.apollographql.apollo.api.http.HttpMethod;com.apollographql.apollo.api.http.HttpMethod;kotlin.Boolean){}[0]
+        final fun autoPersistedQueriesInterceptor(com.apollographql.apollo.interceptor/ApolloInterceptor?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.autoPersistedQueriesInterceptor|autoPersistedQueriesInterceptor(com.apollographql.apollo.interceptor.ApolloInterceptor?){}[0]
         final fun build(): com.apollographql.apollo/ApolloClient // com.apollographql.apollo/ApolloClient.Builder.build|build(){}[0]
+        final fun cacheInterceptor(com.apollographql.apollo.interceptor/ApolloInterceptor?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.cacheInterceptor|cacheInterceptor(com.apollographql.apollo.interceptor.ApolloInterceptor?){}[0]
         final fun canBeBatched(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.canBeBatched|canBeBatched(kotlin.Boolean?){}[0]
         final fun copy(): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.copy|copy(){}[0]
         final fun customScalarAdapters(com.apollographql.apollo.api/CustomScalarAdapters): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.customScalarAdapters|customScalarAdapters(com.apollographql.apollo.api.CustomScalarAdapters){}[0]
         final fun dispatcher(kotlinx.coroutines/CoroutineDispatcher?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.dispatcher|dispatcher(kotlinx.coroutines.CoroutineDispatcher?){}[0]
         final fun enableAutoPersistedQueries(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.enableAutoPersistedQueries|enableAutoPersistedQueries(kotlin.Boolean?){}[0]
         final fun executionContext(com.apollographql.apollo.api/ExecutionContext): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.executionContext|executionContext(com.apollographql.apollo.api.ExecutionContext){}[0]
+        final fun failFastIfOffline(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.failFastIfOffline|failFastIfOffline(kotlin.Boolean?){}[0]
         final fun httpBatching(kotlin/Long = ..., kotlin/Int = ..., kotlin/Boolean = ...): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpBatching|httpBatching(kotlin.Long;kotlin.Int;kotlin.Boolean){}[0]
         final fun httpEngine(com.apollographql.apollo.network.http/HttpEngine?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpEngine|httpEngine(com.apollographql.apollo.network.http.HttpEngine?){}[0]
         final fun httpExposeErrorBody(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpExposeErrorBody|httpExposeErrorBody(kotlin.Boolean?){}[0]
@@ -460,10 +699,13 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
         final fun httpInterceptors(kotlin.collections/List<com.apollographql.apollo.network.http/HttpInterceptor>): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpInterceptors|httpInterceptors(kotlin.collections.List<com.apollographql.apollo.network.http.HttpInterceptor>){}[0]
         final fun httpMethod(com.apollographql.apollo.api.http/HttpMethod?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpMethod|httpMethod(com.apollographql.apollo.api.http.HttpMethod?){}[0]
         final fun httpServerUrl(kotlin/String?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.httpServerUrl|httpServerUrl(kotlin.String?){}[0]
+        final fun ignoreUnknownKeys(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.ignoreUnknownKeys|ignoreUnknownKeys(kotlin.Boolean?){}[0]
         final fun interceptors(kotlin.collections/List<com.apollographql.apollo.interceptor/ApolloInterceptor>): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.interceptors|interceptors(kotlin.collections.List<com.apollographql.apollo.interceptor.ApolloInterceptor>){}[0]
         final fun networkTransport(com.apollographql.apollo.network/NetworkTransport?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.networkTransport|networkTransport(com.apollographql.apollo.network.NetworkTransport?){}[0]
         final fun removeHttpInterceptor(com.apollographql.apollo.network.http/HttpInterceptor): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.removeHttpInterceptor|removeHttpInterceptor(com.apollographql.apollo.network.http.HttpInterceptor){}[0]
         final fun removeInterceptor(com.apollographql.apollo.interceptor/ApolloInterceptor): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.removeInterceptor|removeInterceptor(com.apollographql.apollo.interceptor.ApolloInterceptor){}[0]
+        final fun retryOnError(kotlin/Function1<com.apollographql.apollo.api/ApolloRequest<*>, kotlin/Boolean>?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.retryOnError|retryOnError(kotlin.Function1<com.apollographql.apollo.api.ApolloRequest<*>,kotlin.Boolean>?){}[0]
+        final fun retryOnErrorInterceptor(com.apollographql.apollo.interceptor/ApolloInterceptor?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.retryOnErrorInterceptor|retryOnErrorInterceptor(com.apollographql.apollo.interceptor.ApolloInterceptor?){}[0]
         final fun sendApqExtensions(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.sendApqExtensions|sendApqExtensions(kotlin.Boolean?){}[0]
         final fun sendDocument(kotlin/Boolean?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.sendDocument|sendDocument(kotlin.Boolean?){}[0]
         final fun serverUrl(kotlin/String): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.serverUrl|serverUrl(kotlin.String){}[0]
@@ -474,10 +716,6 @@ final class com.apollographql.apollo/ApolloClient : com.apollographql.apollo.api
         final fun webSocketServerUrl(kotlin.coroutines/SuspendFunction0<kotlin/String>?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.webSocketServerUrl|webSocketServerUrl(kotlin.coroutines.SuspendFunction0<kotlin.String>?){}[0]
         final fun webSocketServerUrl(kotlin/String?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.webSocketServerUrl|webSocketServerUrl(kotlin.String?){}[0]
         final fun wsProtocol(com.apollographql.apollo.network.ws/WsProtocol.Factory?): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Builder.wsProtocol|wsProtocol(com.apollographql.apollo.network.ws.WsProtocol.Factory?){}[0]
-    }
-
-    final object Companion { // com.apollographql.apollo/ApolloClient.Companion|null[0]
-        final fun builder(): com.apollographql.apollo/ApolloClient.Builder // com.apollographql.apollo/ApolloClient.Companion.builder|builder(){}[0]
     }
 }
 
@@ -492,6 +730,30 @@ final class com.apollographql.apollo/AutoPersistedQueryInfo : com.apollographql.
     final object Key : com.apollographql.apollo.api/ExecutionContext.Key<com.apollographql.apollo/AutoPersistedQueryInfo> // com.apollographql.apollo/AutoPersistedQueryInfo.Key|null[0]
 }
 
+final class com.apollographql.apollo/CacheDumpProviderContext : com.apollographql.apollo.api/ExecutionContext.Element { // com.apollographql.apollo/CacheDumpProviderContext|null[0]
+    constructor <init>(kotlin/Function0<kotlin.collections/Map<kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Pair<kotlin/Int, kotlin.collections/Map<kotlin/String, kotlin/Any?>>>>>) // com.apollographql.apollo/CacheDumpProviderContext.<init>|<init>(kotlin.Function0<kotlin.collections.Map<kotlin.String,kotlin.collections.Map<kotlin.String,kotlin.Pair<kotlin.Int,kotlin.collections.Map<kotlin.String,kotlin.Any?>>>>>){}[0]
+
+    final val cacheDumpProvider // com.apollographql.apollo/CacheDumpProviderContext.cacheDumpProvider|{}cacheDumpProvider[0]
+        final fun <get-cacheDumpProvider>(): kotlin/Function0<kotlin.collections/Map<kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/Pair<kotlin/Int, kotlin.collections/Map<kotlin/String, kotlin/Any?>>>>> // com.apollographql.apollo/CacheDumpProviderContext.cacheDumpProvider.<get-cacheDumpProvider>|<get-cacheDumpProvider>(){}[0]
+    final val key // com.apollographql.apollo/CacheDumpProviderContext.key|{}key[0]
+        final fun <get-key>(): com.apollographql.apollo.api/ExecutionContext.Key<*> // com.apollographql.apollo/CacheDumpProviderContext.key.<get-key>|<get-key>(){}[0]
+
+    final object Key : com.apollographql.apollo.api/ExecutionContext.Key<com.apollographql.apollo/CacheDumpProviderContext> // com.apollographql.apollo/CacheDumpProviderContext.Key|null[0]
+}
+
+final class com.apollographql.apollo/ConcurrencyInfo : com.apollographql.apollo.api/ExecutionContext.Element { // com.apollographql.apollo/ConcurrencyInfo|null[0]
+    constructor <init>(kotlinx.coroutines/CoroutineDispatcher, kotlinx.coroutines/CoroutineScope) // com.apollographql.apollo/ConcurrencyInfo.<init>|<init>(kotlinx.coroutines.CoroutineDispatcher;kotlinx.coroutines.CoroutineScope){}[0]
+
+    final val coroutineScope // com.apollographql.apollo/ConcurrencyInfo.coroutineScope|{}coroutineScope[0]
+        final fun <get-coroutineScope>(): kotlinx.coroutines/CoroutineScope // com.apollographql.apollo/ConcurrencyInfo.coroutineScope.<get-coroutineScope>|<get-coroutineScope>(){}[0]
+    final val dispatcher // com.apollographql.apollo/ConcurrencyInfo.dispatcher|{}dispatcher[0]
+        final fun <get-dispatcher>(): kotlinx.coroutines/CoroutineDispatcher // com.apollographql.apollo/ConcurrencyInfo.dispatcher.<get-dispatcher>|<get-dispatcher>(){}[0]
+    final val key // com.apollographql.apollo/ConcurrencyInfo.key|{}key[0]
+        final fun <get-key>(): com.apollographql.apollo.api/ExecutionContext.Key<*> // com.apollographql.apollo/ConcurrencyInfo.key.<get-key>|<get-key>(){}[0]
+
+    final object Key : com.apollographql.apollo.api/ExecutionContext.Key<com.apollographql.apollo/ConcurrencyInfo> // com.apollographql.apollo/ConcurrencyInfo.Key|null[0]
+}
+
 open class com.apollographql.apollo.network.ws/SubscriptionWsProtocolAdapter : com.apollographql.apollo.network.ws/WsProtocol { // com.apollographql.apollo.network.ws/SubscriptionWsProtocolAdapter|null[0]
     constructor <init>(com.apollographql.apollo.network.ws/WebSocketConnection, com.apollographql.apollo.network.ws/WsProtocol.Listener) // com.apollographql.apollo.network.ws/SubscriptionWsProtocolAdapter.<init>|<init>(com.apollographql.apollo.network.ws.WebSocketConnection;com.apollographql.apollo.network.ws.WsProtocol.Listener){}[0]
 
@@ -501,6 +763,14 @@ open class com.apollographql.apollo.network.ws/SubscriptionWsProtocolAdapter : c
     open suspend fun connectionInit() // com.apollographql.apollo.network.ws/SubscriptionWsProtocolAdapter.connectionInit|connectionInit(){}[0]
 }
 
+final object com.apollographql.apollo.network.websocket/ConnectionAckServerMessage : com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/ConnectionAckServerMessage|null[0]
+
+final object com.apollographql.apollo.network.websocket/ConnectionKeepAliveServerMessage : com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/ConnectionKeepAliveServerMessage|null[0]
+
+final object com.apollographql.apollo.network.websocket/PingServerMessage : com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/PingServerMessage|null[0]
+
+final object com.apollographql.apollo.network.websocket/PongServerMessage : com.apollographql.apollo.network.websocket/ServerMessage // com.apollographql.apollo.network.websocket/PongServerMessage|null[0]
+
 final const val com.apollographql.apollo.network.ws/CLOSE_GOING_AWAY // com.apollographql.apollo.network.ws/CLOSE_GOING_AWAY|{}CLOSE_GOING_AWAY[0]
     final fun <get-CLOSE_GOING_AWAY>(): kotlin/Int // com.apollographql.apollo.network.ws/CLOSE_GOING_AWAY.<get-CLOSE_GOING_AWAY>|<get-CLOSE_GOING_AWAY>(){}[0]
 final const val com.apollographql.apollo.network.ws/CLOSE_NORMAL // com.apollographql.apollo.network.ws/CLOSE_NORMAL|{}CLOSE_NORMAL[0]
@@ -508,10 +778,16 @@ final const val com.apollographql.apollo.network.ws/CLOSE_NORMAL // com.apollogr
 
 final val com.apollographql.apollo/autoPersistedQueryInfo // com.apollographql.apollo/autoPersistedQueryInfo|@com.apollographql.apollo.api.ApolloResponse<0:0>{0§<com.apollographql.apollo.api.Operation.Data>}autoPersistedQueryInfo[0]
     final fun <#A1: com.apollographql.apollo.api/Operation.Data> (com.apollographql.apollo.api/ApolloResponse<#A1>).<get-autoPersistedQueryInfo>(): com.apollographql.apollo/AutoPersistedQueryInfo? // com.apollographql.apollo/autoPersistedQueryInfo.<get-autoPersistedQueryInfo>|<get-autoPersistedQueryInfo>@com.apollographql.apollo.api.ApolloResponse<0:0>(){0§<com.apollographql.apollo.api.Operation.Data>}[0]
+final val com.apollographql.apollo/conflateFetchPolicyInterceptorResponses // com.apollographql.apollo/conflateFetchPolicyInterceptorResponses|@com.apollographql.apollo.api.ApolloRequest<0:0>{0§<com.apollographql.apollo.api.Operation.Data>}conflateFetchPolicyInterceptorResponses[0]
+    final fun <#A1: com.apollographql.apollo.api/Operation.Data> (com.apollographql.apollo.api/ApolloRequest<#A1>).<get-conflateFetchPolicyInterceptorResponses>(): kotlin/Boolean // com.apollographql.apollo/conflateFetchPolicyInterceptorResponses.<get-conflateFetchPolicyInterceptorResponses>|<get-conflateFetchPolicyInterceptorResponses>@com.apollographql.apollo.api.ApolloRequest<0:0>(){0§<com.apollographql.apollo.api.Operation.Data>}[0]
 
 final fun (com.apollographql.apollo.network.http/HttpEngine).com.apollographql.apollo.network.http/get(kotlin/String): com.apollographql.apollo.network.http/HttpCall // com.apollographql.apollo.network.http/get|get@com.apollographql.apollo.network.http.HttpEngine(kotlin.String){}[0]
 final fun (com.apollographql.apollo.network.http/HttpEngine).com.apollographql.apollo.network.http/post(kotlin/String): com.apollographql.apollo.network.http/HttpCall // com.apollographql.apollo.network.http/post|post@com.apollographql.apollo.network.http.HttpEngine(kotlin.String){}[0]
+final fun (com.apollographql.apollo.network/NetworkTransport).com.apollographql.apollo.network.websocket/closeConnection() // com.apollographql.apollo.network.websocket/closeConnection|closeConnection@com.apollographql.apollo.network.NetworkTransport(){}[0]
+final fun (com.apollographql.apollo.network/NetworkTransport).com.apollographql.apollo.network.websocket/closeConnection(com.apollographql.apollo.exception/ApolloException) // com.apollographql.apollo.network.websocket/closeConnection|closeConnection@com.apollographql.apollo.network.NetworkTransport(com.apollographql.apollo.exception.ApolloException){}[0]
 final fun (com.apollographql.apollo.network/NetworkTransport).com.apollographql.apollo.network.ws/closeConnection(kotlin/Throwable) // com.apollographql.apollo.network.ws/closeConnection|closeConnection@com.apollographql.apollo.network.NetworkTransport(kotlin.Throwable){}[0]
+final fun <#A: kotlin/Any?> (com.apollographql.apollo.api/MutableExecutionOptions<#A>).com.apollographql.apollo/conflateFetchPolicyInterceptorResponses(kotlin/Boolean): #A // com.apollographql.apollo/conflateFetchPolicyInterceptorResponses|conflateFetchPolicyInterceptorResponses@com.apollographql.apollo.api.MutableExecutionOptions<0:0>(kotlin.Boolean){0§<kotlin.Any?>}[0]
+final fun com.apollographql.apollo.interceptor/RetryOnErrorInterceptor(com.apollographql.apollo.network/NetworkMonitor): com.apollographql.apollo.interceptor/ApolloInterceptor // com.apollographql.apollo.interceptor/RetryOnErrorInterceptor|RetryOnErrorInterceptor(com.apollographql.apollo.network.NetworkMonitor){}[0]
 final fun com.apollographql.apollo.network.http/DefaultHttpEngine(kotlin/Long = ...): com.apollographql.apollo.network.http/HttpEngine // com.apollographql.apollo.network.http/DefaultHttpEngine|DefaultHttpEngine(kotlin.Long){}[0]
 final fun com.apollographql.apollo.network.websocket/WebSocketEngine(): com.apollographql.apollo.network.websocket/WebSocketEngine // com.apollographql.apollo.network.websocket/WebSocketEngine|WebSocketEngine(){}[0]
 
@@ -532,6 +808,9 @@ final fun (kotlin/ByteArray).com.apollographql.apollo.network/toNSData(): platfo
 
 // Targets: [apple]
 final fun com.apollographql.apollo.network.http/DefaultHttpEngine(kotlin/Long = ..., platform.Foundation/NSURLSessionConfiguration): com.apollographql.apollo.network.http/HttpEngine // com.apollographql.apollo.network.http/DefaultHttpEngine|DefaultHttpEngine(kotlin.Long;platform.Foundation.NSURLSessionConfiguration){}[0]
+
+// Targets: [apple]
+final fun com.apollographql.apollo.network/NetworkMonitor(): com.apollographql.apollo.network/NetworkMonitor // com.apollographql.apollo.network/NetworkMonitor|NetworkMonitor(){}[0]
 
 // Targets: [js]
 final fun com.apollographql.apollo.network.http/DefaultHttpEngine(kotlin/Long, kotlin/Long): com.apollographql.apollo.network.http/HttpEngine // com.apollographql.apollo.network.http/DefaultHttpEngine|DefaultHttpEngine(kotlin.Long;kotlin.Long){}[0]

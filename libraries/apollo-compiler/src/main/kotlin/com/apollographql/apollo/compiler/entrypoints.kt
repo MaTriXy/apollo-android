@@ -1,20 +1,24 @@
 package com.apollographql.apollo.compiler
 
 import com.apollographql.apollo.annotations.ApolloInternal
-import com.apollographql.apollo.compiler.codegen.SchemaAndOperationsLayout
+import com.apollographql.apollo.compiler.ApolloCompiler.buildIrOperations
+import com.apollographql.apollo.compiler.ApolloCompiler.buildSchemaAndOperationsSourcesFromIr
 import com.apollographql.apollo.compiler.codegen.writeTo
 import com.apollographql.apollo.compiler.internal.GradleCompilerPluginLogger
 import com.apollographql.apollo.compiler.operationoutput.OperationDescriptor
 import com.apollographql.apollo.compiler.operationoutput.OperationId
-import com.apollographql.apollo.compiler.operationoutput.OperationOutput
 import java.io.File
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 import java.util.ServiceLoader
 import java.util.function.Consumer
 
 /**
- * EntryPoints contains code that is called using reflection from the Gradle plugin.
+ * EntryPoints contains code called using reflection from the Gradle plugin.
  * This is so that the classloader can be isolated, and we can use our preferred version of
  * Kotlin and other dependencies without risking conflicts.
+ *
+ * It is a version of [ApolloCompiler] that takes plain [File]s and other classes available to the bootstrap classloader only.
  */
 @Suppress("UNUSED") // Used from reflection
 @ApolloInternal
@@ -22,7 +26,7 @@ class EntryPoints {
   fun buildCodegenSchema(
       arguments: Map<String, Any?>,
       logLevel: Int,
-      warnIfNotFound: Boolean = false,
+      warnIfNotFound: Boolean,
       normalizedSchemaFiles: List<Any>,
       warning: Consumer<String>,
       codegenSchemaOptionsFile: File,
@@ -38,7 +42,8 @@ class EntryPoints {
         schemaFiles = normalizedSchemaFiles.toInputFiles(),
         logger = warning.toLogger(),
         codegenSchemaOptions = codegenSchemaOptionsFile.toCodegenSchemaOptions(),
-        foreignSchemas = plugin?.foreignSchemas().orEmpty()
+        foreignSchemas = plugin?.foreignSchemas().orEmpty(),
+        schemaTransform = plugin?.schemaTransform()
     ).writeTo(codegenSchemaFile)
   }
 
@@ -55,7 +60,7 @@ class EntryPoints {
     val plugin = apolloCompilerPlugin(arguments, logLevel)
 
     val upstream = upstreamIrOperations.toInputFiles().map { it.file.toIrOperations() }
-    ApolloCompiler.buildIrOperations(
+    buildIrOperations(
         executableFiles = graphqlFiles.toInputFiles(),
         codegenSchema = codegenSchemaFiles.toInputFiles().map { it.file }.findCodegenSchemaFile().toCodegenSchema(),
         upstreamCodegenModels = upstream.map { it.codegenModels },
@@ -69,7 +74,7 @@ class EntryPoints {
   fun buildSourcesFromIr(
       arguments: Map<String, Any?>,
       logLevel: Int,
-      warnIfNotFound: Boolean = false,
+      warnIfNotFound: Boolean,
       codegenSchemaFiles: List<Any>,
       upstreamMetadata: List<Any>,
       irOperations: File,
@@ -85,11 +90,10 @@ class EntryPoints {
         warnIfNotFound
     )
     val codegenSchemaFile = codegenSchemaFiles.toInputFiles().map { it.file }.findCodegenSchemaFile()
-
     val codegenSchema = codegenSchemaFile.toCodegenSchema()
 
     val upstreamCodegenMetadata = upstreamMetadata.toInputFiles().map { it.file.toCodegenMetadata() }
-    ApolloCompiler.buildSchemaAndOperationsSourcesFromIr(
+    buildSchemaAndOperationsSourcesFromIr(
         codegenSchema = codegenSchema,
         irOperations = irOperations.toIrOperations(),
         downstreamUsedCoordinates = downstreamUsedCoordinates.toUsedCoordinates(),
@@ -100,7 +104,7 @@ class EntryPoints {
         javaOutputTransform = plugin?.javaOutputTransform(),
         kotlinOutputTransform = plugin?.kotlinOutputTransform(),
         operationManifestFile = operationManifestFile,
-        operationOutputGenerator = plugin?.toOperationOutputGenerator(),
+        operationIdsGenerator = plugin?.toOperationIdsGenerator(),
     ).writeTo(outputDir, true, metadataOutputFile)
 
     if (upstreamCodegenMetadata.isEmpty()) {
@@ -111,15 +115,16 @@ class EntryPoints {
   fun buildSources(
       arguments: Map<String, Any?>,
       logLevel: Int,
-      warnIfNotFound: Boolean = false,
+      warnIfNotFound: Boolean,
       schemaFiles: List<Any>,
       graphqlFiles: List<Any>,
-      codegenSchemaOptions: File,
-      codegenOptions: File,
+      codegenSchemaOptionsFile: File,
+      codegenOptionsFile: File,
       irOptions: File,
       warning: Consumer<String>,
       operationManifestFile: File?,
-      outputDir: File
+      outputDir: File,
+      dataBuildersOutputDir: File,
   ) {
     val plugin = apolloCompilerPlugin(
         arguments,
@@ -127,47 +132,103 @@ class EntryPoints {
         warnIfNotFound
     )
 
+    val codegenSchemaOptions = codegenSchemaOptionsFile.toCodegenSchemaOptions()
     val codegenSchema = ApolloCompiler.buildCodegenSchema(
         schemaFiles = schemaFiles.toInputFiles(),
-        codegenSchemaOptions = codegenSchemaOptions.toCodegenSchemaOptions(),
+        codegenSchemaOptions = codegenSchemaOptions,
         foreignSchemas = plugin?.foreignSchemas().orEmpty(),
-        logger = warning.toLogger()
+        logger = warning.toLogger(),
+        schemaTransform = plugin?.schemaTransform()
     )
 
-    ApolloCompiler.buildSchemaAndOperationsSources(
-        codegenSchema,
+    val irOperations = buildIrOperations(
+        codegenSchema = codegenSchema,
         executableFiles = graphqlFiles.toInputFiles(),
-        codegenOptions = codegenOptions.toCodegenOptions(),
-        irOptions = irOptions.toIrOptions(),
+        upstreamCodegenModels = emptyList(),
+        upstreamFragmentDefinitions = emptyList(),
+        documentTransform = plugin?.documentTransform(),
+        options = irOptions.toIrOptions(),
         logger = warning.toLogger(),
-        layoutFactory = object : LayoutFactory {
-          override fun create(codegenSchema: CodegenSchema): SchemaAndOperationsLayout? {
-            return plugin?.layout(codegenSchema)
-          }
-        },
-        operationOutputGenerator = plugin?.toOperationOutputGenerator(),
+    )
+
+    val codegenOptions = codegenOptionsFile.toCodegenOptions()
+    val layout = plugin?.layout(codegenSchema)
+    val sourceOutput = buildSchemaAndOperationsSourcesFromIr(
+        codegenSchema = codegenSchema,
+        irOperations = irOperations,
+        downstreamUsedCoordinates = UsedCoordinates(),
+        upstreamCodegenMetadata = emptyList(),
+        codegenOptions = codegenOptions,
+        layout = layout,
         irOperationsTransform = plugin?.irOperationsTransform(),
         javaOutputTransform = plugin?.javaOutputTransform(),
         kotlinOutputTransform = plugin?.kotlinOutputTransform(),
-        documentTransform = plugin?.documentTransform(),
         operationManifestFile = operationManifestFile,
-    ).writeTo(outputDir, true, null)
+        operationIdsGenerator = plugin?.toOperationIdsGenerator(),
+    )
+
+    if (codegenSchema.schema.generateDataBuilders) {
+      ApolloCompiler.buildDataBuilders(
+          codegenSchema,
+          irOperations.usedCoordinates,
+          codegenOptions,
+          layout,
+          listOf(sourceOutput.codegenMetadata)
+      ).writeTo(dataBuildersOutputDir, true, null)
+    }
+
+    sourceOutput.writeTo(outputDir, true, null)
 
     plugin?.schemaListener()?.onSchema(codegenSchema.schema, outputDir)
   }
+
+  fun buildDataBuilders(
+      arguments: Map<String, Any?>,
+      logLevel: Int,
+      warnIfNotFound: Boolean,
+      codegenSchemaFiles: List<Any>,
+      upstreamMetadata: List<Any>,
+      downstreamUsedCoordinates: Map<String, Map<String, Set<String>>>,
+      codegenOptions: File,
+      outputDir: File
+  ) {
+    val plugin = apolloCompilerPlugin(
+        arguments,
+        logLevel,
+        warnIfNotFound
+    )
+    val codegenSchemaFile = codegenSchemaFiles.toInputFiles().map { it.file }.findCodegenSchemaFile()
+    val codegenSchema = codegenSchemaFile.toCodegenSchema()
+    val upstreamCodegenMetadata = upstreamMetadata.toInputFiles().map { it.file.toCodegenMetadata() }
+
+    ApolloCompiler.buildDataBuilders(
+        codegenSchema = codegenSchema,
+        usedCoordinates = downstreamUsedCoordinates.toUsedCoordinates(),
+        codegenOptions = codegenOptions.toCodegenOptions(),
+        layout = plugin?.layout(codegenSchema),
+        upstreamCodegenMetadata = upstreamCodegenMetadata,
+    ).writeTo(outputDir, true, null)
+  }
 }
 
-@Suppress("DEPRECATION")
-internal fun ApolloCompilerPlugin.toOperationOutputGenerator(): OperationOutputGenerator {
-  return object : OperationOutputGenerator {
-    override fun generate(operationDescriptorList: Collection<OperationDescriptor>): OperationOutput {
-      var operationIds = operationIds(operationDescriptorList.toList())
-      if (operationIds == null) {
-        operationIds = operationDescriptorList.map { OperationId(OperationIdGenerator.Sha256.apply(it.source, it.name), it.name) }
-      }
-      return operationDescriptorList.associateBy { descriptor ->
-        val operationId = operationIds.firstOrNull { it.name == descriptor.name } ?: error("No id found for operation ${descriptor.name}")
-        operationId.id
+internal fun ApolloCompilerPlugin.toOperationIdsGenerator(): OperationIdsGenerator {
+
+  return object : OperationIdsGenerator {
+    private fun String.sha256(): String {
+      val bytes = toByteArray(charset = StandardCharsets.UTF_8)
+      val md = MessageDigest.getInstance("SHA-256")
+      val digest = md.digest(bytes)
+      return digest.fold("") { str, it -> str + "%02x".format(it) }
+    }
+
+    override fun generate(operationDescriptorList: Collection<OperationDescriptor>): List<OperationId> {
+      val operationIds = operationIds(operationDescriptorList.toList())
+      return if (operationIds == null) {
+        operationDescriptorList.map {
+          OperationId(it.source.sha256(), it.name)
+        }
+      } else {
+        operationIds
       }
     }
   }
@@ -184,6 +245,9 @@ internal fun Consumer<String>.toLogger(): ApolloCompiler.Logger {
 @ApolloInternal
 fun Iterable<File>.findCodegenSchemaFile(): File {
   return firstOrNull {
+    /*
+     * TODO v5: simplify this and add a schema { } block to the Gradle configuration
+     */
     it.length() > 0
   } ?: error("Cannot find CodegenSchema in $this")
 }

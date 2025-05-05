@@ -44,11 +44,9 @@ import kotlin.reflect.KClass
  */
 internal class ExtensionsMerger(private val definitions: List<GQLDefinition>, internal val mergeOptions: MergeOptions) {
   val issues = mutableListOf<Issue>()
-  val directiveDefinitions: Map<String, GQLDirectiveDefinition>
-
-  init {
-    directiveDefinitions = definitions.filterIsInstance<GQLDirectiveDefinition>().associateBy { it.name }
-  }
+  val directiveDefinitions: Map<String, GQLDirectiveDefinition> = definitions
+      .filterIsInstance<GQLDirectiveDefinition>()
+      .associateBy { it.name }
 
   fun merge(): GQLResult<List<GQLDefinition>> {
     val newDefinitions = mutableListOf<GQLDefinition>()
@@ -162,7 +160,7 @@ private inline fun <reified T, E> ExtensionsMerger.mergeTypedDefinition(
 ) where T : GQLDefinition, E : GQLTypeSystemExtension {
   val index = newDefinitions.indexOfFirst { it is T }
   if (index == -1) {
-    issues.add(OtherValidationIssue("Cannot find $extra definition to apply extension", extension.sourceLocation))
+    issues.add(OtherValidationIssue("Cannot find $extra definition to apply the following extension:\n${extension.toUtf8()}", extension.sourceLocation))
   } else {
     newDefinitions.set(index, merge(newDefinitions[index] as T))
   }
@@ -190,7 +188,7 @@ private inline fun <reified T, E> ExtensionsMerger.mergeNamedDefinition(
 
   when (indexedValues.size) {
     0 -> {
-      issues.add(OtherValidationIssue("Cannot find $extra type `${extension.name}` to apply extension", extension.sourceLocation))
+      issues.add(OtherValidationIssue("Cannot find $extra type `${extension.name}` to apply the following extension:\n${extension.toUtf8()}", extension.sourceLocation))
     }
 
     1 -> {
@@ -318,28 +316,40 @@ private fun ExtensionsMerger.mergeFields(
       // field doesn't exist, add it
       result.add(newFieldDefinition)
     } else {
-      val existingFieldDefinition = result[index]
-      if (!mergeOptions.allowFieldNullabilityModification) {
+      if (!mergeOptions.allowFieldNullabilityModification && !mergeOptions.allowAddingDirectivesToExistingFieldDefinitions) {
         issues.add(OtherValidationIssue("There is already a field definition named `${newFieldDefinition.name}` for this type", newFieldDefinition.sourceLocation))
         return@forEach
       }
 
+      val existingFieldDefinition = result[index]
       if (!areEqual(newFieldDefinition.arguments, existingFieldDefinition.arguments)) {
         issues.add(OtherValidationIssue("Cannot merge field definition `${newFieldDefinition.name}`: its arguments do not match the arguments of the original field definition", newFieldDefinition.sourceLocation))
         return@forEach
       }
 
-      if (newFieldDefinition.directives.isNotEmpty()) {
-        issues.add(OtherValidationIssue("Cannot add directives to existing field definition `${newFieldDefinition.name}`", newFieldDefinition.sourceLocation))
-        return@forEach
+      if (mergeOptions.allowFieldNullabilityModification) {
+        if (!newFieldDefinition.type.isCompatibleWith(existingFieldDefinition.type)) {
+          issues.add(OtherValidationIssue("Cannot merge field definition `${newFieldDefinition.name}`: its type is not compatible with the original type.", newFieldDefinition.sourceLocation))
+          return@forEach
+        }
+      } else {
+        if (newFieldDefinition.type.toUtf8() != existingFieldDefinition.type.toUtf8()) {
+          issues.add(OtherValidationIssue("Cannot merge field definition`${newFieldDefinition.name}`: they have different types.", newFieldDefinition.sourceLocation))
+          return@forEach
+        }
+      }
+      if (!mergeOptions.allowAddingDirectivesToExistingFieldDefinitions) {
+        if (newFieldDefinition.directives.isNotEmpty()) {
+          issues.add(OtherValidationIssue("Cannot add directives to existing field definition `${newFieldDefinition.name}`", newFieldDefinition.sourceLocation))
+          return@forEach
+        }
       }
 
-      if (!newFieldDefinition.type.isCompatibleWith(existingFieldDefinition.type)) {
-        issues.add(OtherValidationIssue("Cannot merge field directives`${newFieldDefinition.name}`: its type is not compatible with the original type`", newFieldDefinition.sourceLocation))
-        return@forEach
-      }
-
-      result[index] = existingFieldDefinition.copy(type = newFieldDefinition.type)
+      /*
+       * No need to validate repeated directives, this is done later on by schema validation.
+       */
+      val newDirectives = existingFieldDefinition.directives + newFieldDefinition.directives
+      result[index] = existingFieldDefinition.copy(type = newFieldDefinition.type, directives = newDirectives)
     }
   }
 

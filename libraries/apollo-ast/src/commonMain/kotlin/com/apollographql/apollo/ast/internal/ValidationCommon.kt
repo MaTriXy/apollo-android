@@ -2,6 +2,7 @@ package com.apollographql.apollo.ast.internal
 
 import com.apollographql.apollo.ast.DeprecatedUsage
 import com.apollographql.apollo.ast.GQLArgument
+import com.apollographql.apollo.ast.GQLDefinition
 import com.apollographql.apollo.ast.GQLDirective
 import com.apollographql.apollo.ast.GQLDirectiveDefinition
 import com.apollographql.apollo.ast.GQLDirectiveLocation
@@ -28,6 +29,7 @@ import com.apollographql.apollo.ast.GQLTypeDefinition
 import com.apollographql.apollo.ast.GQLUnionTypeDefinition
 import com.apollographql.apollo.ast.GQLVariableDefinition
 import com.apollographql.apollo.ast.Issue
+import com.apollographql.apollo.ast.NonNullUsage
 import com.apollographql.apollo.ast.OtherValidationIssue
 import com.apollographql.apollo.ast.Schema
 import com.apollographql.apollo.ast.Schema.Companion.TYPE_POLICY
@@ -83,6 +85,10 @@ internal class DefaultValidationScope(
     issues: MutableList<Issue>? = null,
     override val foreignNames: Map<String, String> = emptyMap(),
 ) : ValidationScope {
+  constructor(definitions: List<GQLDefinition>) : this(
+      definitions.filterIsInstance<GQLTypeDefinition>().associateBy { it.name },
+      definitions.filterIsInstance<GQLDirectiveDefinition>().associateBy { it.name },
+  )
   constructor(schema: Schema) : this(schema.typeDefinitions, schema.directiveDefinitions)
 
   override val issues = issues ?: mutableListOf()
@@ -110,6 +116,13 @@ private fun ValidationScope.validateDirectiveInternal(
       "directive '${directiveDefinition.name}'",
       registerVariableUsage
   )
+}
+
+internal fun ValidationScope.validateDirectivesInConstContext(
+    directives: List<GQLDirective>,
+    directiveContext: GQLNode,
+) = validateDirectives(directives, directiveContext) {
+  issues.add(it.constContextError())
 }
 
 /**
@@ -152,26 +165,7 @@ internal fun ValidationScope.validateDirectives(
   val pairs = directives.mapNotNull { directive ->
     val directiveDefinition = directiveDefinitions[directive.name]
     if (directiveDefinition == null) {
-      when (val originalName = originalDirectiveName(directive.name)) {
-        Schema.OPTIONAL,
-        Schema.NONNULL,
-        Schema.TYPE_POLICY,
-        Schema.FIELD_POLICY,
-        Schema.REQUIRES_OPT_IN,
-        Schema.TARGET_NAME,
-        -> {
-          /**
-           * This validation is lenient for historical reasons. We don't want to break users relying on this.
-           * If you're reading this and there's a good reason to, you can move directives out of this branch and require user to
-           * specify the correct `@link` directive
-           */
-          issues.add(UnknownDirective("Unknown directive '@${directive.name}'", directive.sourceLocation, requireDefinition = false))
-        }
-        else -> {
-          issues.add(UnknownDirective("No directive definition found for '@${originalName}'", directive.sourceLocation, requireDefinition = true))
-        }
-      }
-
+      issues.add(UnknownDirective("Unknown directive '@${directive.name}'", directive.sourceLocation))
       return@mapNotNull null
     }
 
@@ -207,7 +201,7 @@ internal fun ValidationScope.validateDirectives(
  */
 internal fun ValidationScope.extraValidateNonNullDirective(directive: GQLDirective, directiveContext: GQLNode) {
   issues.add(
-      DeprecatedUsage(message = "Using `@nonnull` is deprecated. Use `@semanticNonNull` and/or `@catch` instead. See https://go.apollo.dev/ak-nullability.", directive.sourceLocation)
+      NonNullUsage(message = "Using `@nonnull` is deprecated. Use `@semanticNonNull` and/or `@catch` instead. See https://go.apollo.dev/ak-nullability.", directive.sourceLocation)
   )
   if (directiveContext is GQLField && directive.arguments.isNotEmpty()) {
     registerIssue(

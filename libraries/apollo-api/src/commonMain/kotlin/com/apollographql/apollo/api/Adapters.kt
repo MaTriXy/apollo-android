@@ -217,6 +217,8 @@ val AnyAdapter = object : Adapter<Any> {
   }
 }
 
+@ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v5_0_0)
+@Deprecated("PassThrough was only used internally by data builders and is removed in v5")
 internal class PassThroughAdapter<T> : Adapter<T> {
   override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters): T {
     check(reader is MapJsonReader) {
@@ -454,15 +456,3 @@ fun <T> Adapter<T>.errorAware(): Adapter<T> = ErrorAwareAdapter(this)
 
 @JvmName("-catchToNull")
 fun <T> Adapter<T>.catchToNull(): Adapter<T?> = CatchToNullAdapter(this)
-
-/**
- * A replica of Apollo Android v2's CustomTypeAdapter, to ease migration from v2 to v3.
- *
- * Make your CustomTypeAdapters implement this interface by updating the imports
- * from `com.apollographql.apollo.api` to `com.apollographql.apollo.api`.
- *
- * **Note**: [Adapter]s are called from multiple threads and implementations must be thread safe.
- */
-@Deprecated("CustomTypeAdapter was used for backward compatibility with 2.x. Use Adapter instead", level = DeprecationLevel.ERROR)
-@ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v3_0_0)
-interface CustomTypeAdapter<T>

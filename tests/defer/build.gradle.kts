@@ -17,20 +17,8 @@ kotlin {
     findByName("commonTest")?.apply {
       dependencies {
         implementation(libs.apollo.normalizedcache)
-        implementation(libs.apollo.testingsupport)
+        implementation(libs.apollo.testingsupport.internal)
         implementation(libs.apollo.mockserver)
-      }
-    }
-
-    findByName("jsTest")?.apply {
-      dependencies {
-        implementation(npm("graphql-helix", "1.13.0"))
-        implementation(npm("express", "4.17.3"))
-        implementation(npm("ws", "8.2.2"))
-        implementation(npm("graphql-ws", "5.5.0"))
-        // Depend on a more recent 'canary' version of graphql-js (version graphql-helix depends on by default is older).
-        // This corresponds to this PR: https://github.com/graphql/graphql-js/pull/2839/
-        implementation(npm("graphql", "canary-pr-2839"))
       }
     }
 
@@ -73,7 +61,7 @@ fun com.apollographql.apollo.gradle.api.Service.configureConnection(generateKotl
     if (generateKotlinModels) {
       connectToKotlinSourceSet("commonTest")
     } else {
-      connectToJavaSourceSet("javaCodegenTest")
+      connectToJavaSourceSet("jvmJavaCodegenTest")
     }
   }
 }

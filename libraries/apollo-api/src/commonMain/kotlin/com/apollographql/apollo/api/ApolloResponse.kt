@@ -128,6 +128,15 @@ private constructor(
         .isLast(isLast)
   }
 
+  override fun toString(): String {
+    return "ApolloResponse(" +
+        "operationName=${operation.name()}, " +
+        "data=${if (data == null) "null" else "${operation.name()}.Data"}, " +
+        "errors=${errors?.size ?: "null"}, " +
+        "exception=${if (exception == null) "null" else exception::class.simpleName ?: "true"}" +
+        ")"
+  }
+
   class Builder<D : Operation.Data> internal constructor(
       private val operation: Operation<D>,
       private var requestUuid: Uuid,
@@ -150,7 +159,7 @@ private constructor(
         requestUuid: Uuid,
     ): this(operation, requestUuid, null, null, null, null)
 
-    @Deprecated("Use 2 params constructor instead", ReplaceWith("Builder(operation = operation, requestUuid = requestUuid).data(data = data)"))
+    @Deprecated("Use 2 params constructor instead", ReplaceWith("Builder(operation = operation, requestUuid = requestUuid).data(data = data)"), level = DeprecationLevel.ERROR)
     @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
     constructor(
         operation: Operation<D>,

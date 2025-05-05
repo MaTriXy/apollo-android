@@ -5,10 +5,10 @@ import com.apollographql.apollo.ast.DifferentShape
 import com.apollographql.apollo.ast.DirectiveRedefinition
 import com.apollographql.apollo.ast.ForeignSchema
 import com.apollographql.apollo.ast.GQLDefinition
+import com.apollographql.apollo.ast.GQLDirective
 import com.apollographql.apollo.ast.GQLDocument
 import com.apollographql.apollo.ast.GQLFragmentDefinition
 import com.apollographql.apollo.ast.GQLOperationDefinition
-import com.apollographql.apollo.ast.GQLScalarTypeDefinition
 import com.apollographql.apollo.ast.GQLSchemaDefinition
 import com.apollographql.apollo.ast.GQLTypeDefinition
 import com.apollographql.apollo.ast.IncompatibleDefinition
@@ -19,11 +19,11 @@ import com.apollographql.apollo.ast.Schema
 import com.apollographql.apollo.ast.UnknownDirective
 import com.apollographql.apollo.ast.UnusedFragment
 import com.apollographql.apollo.ast.UnusedVariable
+import com.apollographql.apollo.ast.builtinForeignSchemas
 import com.apollographql.apollo.ast.checkEmpty
 import com.apollographql.apollo.ast.internal.SchemaValidationOptions
 import com.apollographql.apollo.ast.parseAsGQLDocument
 import com.apollographql.apollo.ast.pretty
-import com.apollographql.apollo.ast.builtinForeignSchemas
 import com.apollographql.apollo.ast.toGQLDocument
 import com.apollographql.apollo.ast.validateAsExecutable
 import com.apollographql.apollo.ast.validateAsSchema
@@ -46,11 +46,14 @@ import com.apollographql.apollo.compiler.internal.checkConditionalFragments
 import com.apollographql.apollo.compiler.internal.checkKeyFields
 import com.apollographql.apollo.compiler.ir.IrOperations
 import com.apollographql.apollo.compiler.ir.IrOperationsBuilder
-import com.apollographql.apollo.compiler.ir.IrSchema
 import com.apollographql.apollo.compiler.ir.IrSchemaBuilder
+import com.apollographql.apollo.compiler.ir.buildIrDataBuilders
 import com.apollographql.apollo.compiler.operationoutput.OperationDescriptor
+import com.apollographql.apollo.compiler.operationoutput.OperationId
+import com.apollographql.apollo.compiler.operationoutput.toOperationOutput
 import com.apollographql.apollo.compiler.pqm.toPersistedQueryManifest
 import java.io.File
+import kotlin.collections.plus
 
 object ApolloCompiler {
   interface Logger {
@@ -61,20 +64,8 @@ object ApolloCompiler {
       schemaFiles: List<InputFile>,
       logger: Logger?,
       codegenSchemaOptions: CodegenSchemaOptions,
-  ): CodegenSchema {
-    return buildCodegenSchema(
-        schemaFiles,
-        logger,
-        codegenSchemaOptions,
-        emptyList()
-    )
-  }
-
-  fun buildCodegenSchema(
-      schemaFiles: List<InputFile>,
-      logger: Logger?,
-      codegenSchemaOptions: CodegenSchemaOptions,
       foreignSchemas: List<ForeignSchema>,
+      schemaTransform: SchemaTransform?,
   ): CodegenSchema {
     val schemaDocuments = schemaFiles.map {
       it.normalizedPath to it.file.toGQLDocument(allowJson = true)
@@ -103,20 +94,52 @@ object ApolloCompiler {
 
     if (mainSchemaDocuments.size > 1) {
       error("Multiple schemas found:\n${mainSchemaDocuments.map { it.sourceLocation?.filePath }.joinToString("\n")}\n" +
-          "Use different services for different schemas")
+          "Use different services for different schemas"
+      )
     } else if (mainSchemaDocuments.isEmpty()) {
       error("Schema(s) found:\n${schemaFiles.map { it.normalizedPath }.joinToString("\n")}\n" +
-          "But none of them contain type definitions.")
+          "But none of them contain type definitions."
+      )
     }
     val mainSchemaDocument = mainSchemaDocuments.single()
 
-    // Sort the other schema document as type extensions are order sensitive
+    // Sort the other schema document as type extensions are order sensitive, and we want this to be under the user control
     val otherSchemaDocumentSorted = otherSchemaDocuments.sortedBy { it.sourceLocation?.filePath?.substringAfterLast(File.pathSeparator) }
+
     val schemaDefinitions = (listOf(mainSchemaDocument) + otherSchemaDocumentSorted).flatMap { it.definitions }
-    val schemaDocument = GQLDocument(
-        definitions = schemaDefinitions,
+
+    val sdl = buildString {
+      var hasLink = false
+      if (codegenSchemaOptions.scalarTypeMapping.isNotEmpty()) {
+        appendLine("extend schema @link(url: \"https://specs.apollo.dev/kotlin_compiler_options/v0.1/\")")
+        hasLink = true
+
+        codegenSchemaOptions.scalarTypeMapping.forEach {
+          append("extend scalar ${it.key} @kotlin_compiler_options__map(to: \"${it.value}\"")
+          val adapterInitializer = codegenSchemaOptions.scalarAdapterMapping.get(it.key)
+          if (adapterInitializer != null) {
+            append(", with: \"$adapterInitializer\"")
+          }
+          append(")\n")
+        }
+      }
+      if (codegenSchemaOptions.generateDataBuilders) {
+        if (!hasLink) {
+          appendLine("extend schema @link(url: \"https://specs.apollo.dev/kotlin_compiler_options/v0.1/\")")
+        }
+        append("extend schema @kotlin_compiler_options__generateDataBuilders")
+      }
+    }
+    val scalarExtensions = sdl.toGQLDocument().definitions
+
+    var schemaDocument = GQLDocument(
+        definitions = schemaDefinitions + scalarExtensions,
         sourceLocation = null
     )
+
+    if (schemaTransform != null) {
+      schemaDocument = schemaTransform.transform(schemaDocument)
+    }
 
     val result = schemaDocument.validateAsSchema(
         validationOptions = SchemaValidationOptions(
@@ -138,14 +161,9 @@ object ApolloCompiler {
 
     val schema = result.value!!
 
-    val scalarMapping = codegenSchemaOptions.scalarMapping
-    checkScalars(schema, scalarMapping)
-
     return CodegenSchema(
         schema = schema,
         normalizedPath = mainSchemaNormalizedPath ?: "",
-        scalarMapping = scalarMapping,
-        generateDataBuilders = codegenSchemaOptions.generateDataBuilders ?: defaultGenerateDataBuilders
     )
   }
 
@@ -170,7 +188,6 @@ object ApolloCompiler {
 
     return definitions
   }
-
 
   fun buildIrOperations(
       codegenSchema: CodegenSchema,
@@ -271,10 +288,20 @@ object ApolloCompiler {
       }
     }
 
+
     val operations = definitions.filterIsInstance<GQLOperationDefinition>().map {
-      addRequiredFields(it, addTypename, schema, fragmentDefinitions).let {
-        documentTransform?.transform(schema, it) ?: it
+      var operation = addRequiredFields(it, addTypename, schema, fragmentDefinitions)
+      if (documentTransform != null) {
+        operation = documentTransform.transform(schema, it)
       }
+      if (schema.directiveDefinitions.containsKey(Schema.DISABLE_ERROR_PROPAGATION)
+          && schema.schemaDefinition?.directives?.any { schema.originalDirectiveName(it.name) == Schema.CATCH_BY_DEFAULT } == true
+      ) {
+        operation = operation.copy(
+            directives = operation.directives + GQLDirective(null, Schema.DISABLE_ERROR_PROPAGATION, emptyList())
+        )
+      }
+      operation
     }
 
     // Remember the fragments with the possibly updated fragments
@@ -306,54 +333,22 @@ object ApolloCompiler {
         flattenModels = flattenModels,
         decapitalizeFields = decapitalizeFields,
         alwaysGenerateTypesMatching = alwaysGenerateTypesMatching,
-        generateDataBuilders = codegenSchema.generateDataBuilders,
         fragmentVariableUsages = validationResult.fragmentVariableUsages
     ).build()
   }
 
-  private fun buildIrSchema(
-      codegenSchema: CodegenSchema,
-      usedCoordinates: UsedCoordinates?,
-  ): IrSchema {
-
-    @Suppress("NAME_SHADOWING")
-    val usedCoordinates = usedCoordinates?.mergeWith((codegenSchema.scalarMapping.keys + setOf("Int", "Float", "String", "ID", "Boolean")).toUsedCoordinates()  )
-        ?: codegenSchema.schema.typeDefinitions.keys.toUsedCoordinates()
-
-    return IrSchemaBuilder.build(
-        schema = codegenSchema.schema,
-        usedCoordinates = usedCoordinates,
-        alreadyVisitedTypes = emptySet(),
-    )
-  }
-
-  private fun checkScalars(schema: Schema, scalarMapping: Map<String, ScalarInfo>) {
-    /**
-     * Generate the mapping for all scalars
-     *
-     * If the user specified a mapping, use it, else fallback to [Any]
-     */
-    val schemaScalars = schema
-        .typeDefinitions
-        .values
-        .filterIsInstance<GQLScalarTypeDefinition>()
-        .map { type -> type.name }
-        .toSet()
-    val unknownScalars = scalarMapping.keys.subtract(schemaScalars)
-    check(unknownScalars.isEmpty()) {
-      "Apollo: unknown scalar(s): ${unknownScalars.joinToString(",")}"
-    }
-  }
-
   fun buildSchemaSources(
       codegenSchema: CodegenSchema,
-      usedCoordinates: UsedCoordinates?,
+      usedCoordinates: UsedCoordinates,
       codegenOptions: CodegenOptions,
       schemaLayout: SchemaLayout?,
       javaOutputTransform: Transform<JavaOutput>?,
       kotlinOutputTransform: Transform<KotlinOutput>?,
   ): SourceOutput {
-    val irSchema = buildIrSchema(codegenSchema, usedCoordinates)
+    val irSchema = IrSchemaBuilder.build(
+        schema = codegenSchema.schema,
+        usedCoordinates = usedCoordinates,
+    )
 
     val targetLanguage = defaultTargetLanguage(codegenOptions.targetLanguage, emptyList())
     codegenOptions.validate()
@@ -362,14 +357,13 @@ object ApolloCompiler {
         codegenSchema = codegenSchema,
         packageName = codegenOptions.packageName,
         rootPackageName = codegenOptions.rootPackageName,
-        useSemanticNaming = codegenOptions.useSemanticNaming ,
+        useSemanticNaming = codegenOptions.useSemanticNaming,
         decapitalizeFields = codegenOptions.decapitalizeFields,
         generatedSchemaName = codegenOptions.generatedSchemaName,
     )
 
     return if (targetLanguage == TargetLanguage.JAVA) {
       JavaCodegen.buildSchemaSources(
-          codegenSchema = codegenSchema,
           irSchema = irSchema,
           codegenOptions = codegenOptions,
           layout = layout,
@@ -377,7 +371,6 @@ object ApolloCompiler {
       ).toSourceOutput()
     } else {
       KotlinCodegen.buildSchemaSources(
-          codegenSchema = codegenSchema,
           targetLanguage = targetLanguage,
           irSchema = irSchema,
           codegenOptions = codegenOptions,
@@ -390,11 +383,11 @@ object ApolloCompiler {
   fun buildSchemaAndOperationsSourcesFromIr(
       codegenSchema: CodegenSchema,
       irOperations: IrOperations,
-      downstreamUsedCoordinates: UsedCoordinates?,
+      downstreamUsedCoordinates: UsedCoordinates,
       upstreamCodegenMetadata: List<CodegenMetadata>,
       codegenOptions: CodegenOptions,
       layout: SchemaAndOperationsLayout?,
-      @Suppress("DEPRECATION") operationOutputGenerator: OperationOutputGenerator?,
+      operationIdsGenerator: OperationIdsGenerator?,
       irOperationsTransform: Transform<IrOperations>?,
       javaOutputTransform: Transform<JavaOutput>?,
       kotlinOutputTransform: Transform<KotlinOutput>?,
@@ -406,15 +399,17 @@ object ApolloCompiler {
     val targetLanguage = defaultTargetLanguage(codegenOptions.targetLanguage, upstreamCodegenMetadata)
     codegenOptions.validate()
 
-    val operationOutput = irOperations.operations.map {
+    val descriptors = irOperations.operations.map {
       OperationDescriptor(
           name = it.name,
           source = QueryDocumentMinifier.minify(it.sourceWithFragments),
           type = it.operationType.name.lowercase()
       )
-    }.let {
-      (operationOutputGenerator ?: defaultOperationOutputGenerator).generate(it)
     }
+
+    val operationOutput = descriptors.toOperationOutput(
+        (operationIdsGenerator ?: defaultOperationOutputGenerator).generate(descriptors)
+    )
 
     check(operationOutput.size == irOperations.operations.size) {
       """The number of operation IDs (${operationOutput.size}) should match the number of operations (${irOperations.operations.size}).
@@ -427,7 +422,7 @@ object ApolloCompiler {
       check(operationManifestFile != null) {
         "Apollo: no operationManifestFile set to output '$operationManifestFormat' operation manifest"
       }
-      @Suppress("DEPRECATION")
+      @Suppress("DEPRECATION_ERROR")
       when (operationManifestFormat) {
         MANIFEST_OPERATION_OUTPUT -> operationOutput.writeTo(operationManifestFile)
         MANIFEST_PERSISTED_QUERY -> operationOutput.toPersistedQueryManifest().writeTo(operationManifestFile)
@@ -447,9 +442,9 @@ object ApolloCompiler {
 
     var sourceOutput: SourceOutput? = null
     if (upstreamCodegenMetadata.isEmpty()) {
-      sourceOutput = sourceOutput plus buildSchemaSources(
+      sourceOutput = buildSchemaSources(
           codegenSchema = codegenSchema,
-          usedCoordinates = downstreamUsedCoordinates?.mergeWith(irOperations.usedCoordinates),
+          usedCoordinates = downstreamUsedCoordinates.mergeWith(irOperations.usedCoordinates),
           codegenOptions = codegenOptions,
           schemaLayout = layout,
           javaOutputTransform = javaOutputTransform,
@@ -458,17 +453,15 @@ object ApolloCompiler {
     }
     if (targetLanguage == TargetLanguage.JAVA) {
       sourceOutput = sourceOutput plus JavaCodegen.buildOperationsSources(
-          codegenSchema = codegenSchema,
           irOperations = irOperations,
           operationOutput = operationOutput,
-          upstreamCodegenMetadata = upstreamCodegenMetadata + listOfNotNull(sourceOutput?.codegenMetadata),
+          upstreamCodegenMetadatas = upstreamCodegenMetadata + listOfNotNull(sourceOutput?.codegenMetadata),
           codegenOptions = codegenOptions,
           layout = layout,
           javaOutputTransform = javaOutputTransform,
       ).toSourceOutput()
     } else {
       sourceOutput = sourceOutput plus KotlinCodegen.buildOperationSources(
-          codegenSchema = codegenSchema,
           targetLanguage = targetLanguage,
           irOperations = irOperations,
           operationOutput = operationOutput,
@@ -492,11 +485,12 @@ object ApolloCompiler {
       irOptions: IrOptions,
       codegenOptions: CodegenOptions,
       layoutFactory: LayoutFactory?,
-      @Suppress("DEPRECATION") operationOutputGenerator: OperationOutputGenerator?,
+      operationIdsGenerator: OperationIdsGenerator?,
       irOperationsTransform: Transform<IrOperations>?,
       javaOutputTransform: Transform<JavaOutput>?,
       kotlinOutputTransform: Transform<KotlinOutput>?,
       documentTransform: DocumentTransform?,
+      schemaTransform: SchemaTransform?,
       logger: Logger?,
       operationManifestFile: File?,
   ): SourceOutput {
@@ -504,7 +498,8 @@ object ApolloCompiler {
         schemaFiles = schemaFiles,
         logger = logger,
         codegenSchemaOptions = codegenSchemaOptions,
-        foreignSchemas = emptyList()
+        foreignSchemas = emptyList(),
+        schemaTransform = schemaTransform
     )
 
     return buildSchemaAndOperationsSources(
@@ -513,7 +508,7 @@ object ApolloCompiler {
         irOptions,
         codegenOptions,
         layoutFactory,
-        operationOutputGenerator,
+        operationIdsGenerator,
         irOperationsTransform,
         javaOutputTransform,
         kotlinOutputTransform,
@@ -522,7 +517,6 @@ object ApolloCompiler {
         operationManifestFile
     )
   }
-
 
   /**
    * Compiles a set of files without serializing the intermediate results
@@ -533,7 +527,7 @@ object ApolloCompiler {
       irOptions: IrOptions,
       codegenOptions: CodegenOptions,
       layoutFactory: LayoutFactory?,
-      @Suppress("DEPRECATION") operationOutputGenerator: OperationOutputGenerator?,
+      operationIdsGenerator: OperationIdsGenerator?,
       irOperationsTransform: Transform<IrOperations>?,
       javaOutputTransform: Transform<JavaOutput>?,
       kotlinOutputTransform: Transform<KotlinOutput>?,
@@ -562,10 +556,48 @@ object ApolloCompiler {
         javaOutputTransform = javaOutputTransform,
         kotlinOutputTransform = kotlinOutputTransform,
         operationManifestFile = operationManifestFile,
-        operationOutputGenerator = operationOutputGenerator,
+        operationIdsGenerator = operationIdsGenerator,
     )
 
     return sourceOutput
+  }
+
+  fun buildDataBuilders(
+      codegenSchema: CodegenSchema,
+      usedCoordinates: UsedCoordinates,
+      codegenOptions: CodegenOptions,
+      layout: SchemaLayout?,
+      upstreamCodegenMetadata: List<CodegenMetadata>,
+  ): SourceOutput {
+    val irDataBuilders = buildIrDataBuilders(codegenSchema, usedCoordinates)
+
+    @Suppress("NAME_SHADOWING")
+    val layout = layout ?: SchemaAndOperationsLayout(
+        codegenSchema = codegenSchema,
+        packageName = codegenOptions.packageName,
+        rootPackageName = codegenOptions.rootPackageName,
+        useSemanticNaming = codegenOptions.useSemanticNaming,
+        decapitalizeFields = codegenOptions.decapitalizeFields,
+        generatedSchemaName = codegenOptions.generatedSchemaName,
+    )
+
+    val targetLanguage = codegenOptions.targetLanguage ?: defaultTargetLanguage(codegenOptions.targetLanguage, upstreamCodegenMetadata)
+    return if (targetLanguage == TargetLanguage.JAVA) {
+      JavaCodegen.buildDataBuilders(
+          dataBuilders = irDataBuilders,
+          layout = layout,
+          codegenOptions = codegenOptions,
+          upstreamCodegenMetadata = upstreamCodegenMetadata,
+      ).toSourceOutput()
+    } else {
+      KotlinCodegen.buildDataBuilders(
+          dataBuilders = irDataBuilders,
+          layout = layout,
+          codegenOptions = codegenOptions,
+          upstreamCodegenMetadata = upstreamCodegenMetadata,
+          targetLanguage = targetLanguage,
+      ).toSourceOutput()
+    }
   }
 }
 
@@ -589,27 +621,14 @@ internal fun List<Issue>.group(
   val warnings = mutableListOf<Issue>()
   val errors = mutableListOf<Issue>()
 
-  /**
-   * The kotlin_labs directives as of v0.3: https://specs.apollo.dev/kotlin_labs/v0.3/
-   * v0.4 removed `@nonnull` but we may still have users on v0.3.
-   *
-   * Moving forward, do not add new names there. If the directive is already defined, it
-   * should be removed. This should even be an error.
-   */
-  val apolloDirectives = setOf("optional", "nonnull", "typePolicy", "fieldPolicy", "requiresOptIn", "targetName")
-
   forEach {
     val severity = when (it) {
       is DeprecatedUsage -> if (warnOnDeprecatedUsages) Severity.Warning else Severity.None
       is DifferentShape -> if (fieldsOnDisjointTypesMustMerge) Severity.Error else Severity.Warning
       is UnusedVariable -> Severity.Warning
       is UnusedFragment -> Severity.None
-      is UnknownDirective -> if (it.requireDefinition) Severity.Error else Severity.Warning
-      /**
-       * Because some users might have added the apollo directive to their schema, we just let that through for now
-       */
-      is DirectiveRedefinition -> if (it.name in apolloDirectives) Severity.None else Severity.Warning
-      is IncompatibleDefinition -> Severity.Warning
+      is IncompatibleDefinition -> Severity.Warning // This should probably be an error
+      is DirectiveRedefinition -> Severity.Warning
       else -> Severity.Error
     }
 
@@ -624,7 +643,7 @@ internal fun List<Issue>.group(
 }
 
 /**
- * An input file together with its normalizedPath
+ * An input file together with its normalizedPath.
  * normalizedPath is used to compute the package name in some cases
  */
 class InputFile(val file: File, val normalizedPath: String)
@@ -635,4 +654,8 @@ internal fun <T> T.maybeTransform(transform: Transform<T>?) = transform?.transfo
 
 interface LayoutFactory {
   fun create(codegenSchema: CodegenSchema): SchemaAndOperationsLayout?
+}
+
+fun interface OperationIdsGenerator {
+  fun generate(operationDescriptorList: Collection<OperationDescriptor>): List<OperationId>
 }

@@ -9,16 +9,18 @@ import com.apollographql.apollo.annotations.ApolloAdaptableWith
 import com.apollographql.apollo.api.Adapter
 import com.apollographql.apollo.api.CompiledField
 import com.apollographql.apollo.api.CustomScalarAdapters
+import com.apollographql.apollo.api.ExecutableDefinition
 import com.apollographql.apollo.api.Query
 import com.apollographql.apollo.api.json.JsonWriter
 import com.apollographql.apollo.api.obj
+import com.example.Timestamp
 import com.example.custom_scalar_type.adapter.TestQuery_ResponseAdapter
 import com.example.custom_scalar_type.selections.TestQuerySelections
+import com.example.custom_scalar_type.type.scalar.CharacterID
 import java.util.Date
 import kotlin.Any
 import kotlin.Boolean
 import kotlin.Int
-import kotlin.Long
 import kotlin.String
 import kotlin.collections.List
 import com.example.custom_scalar_type.type.Query as CompiledQuery
@@ -42,24 +44,29 @@ public class TestQuery() : Query<TestQuery.Data> {
     // This operation doesn't have any variable
   }
 
-  override fun adapter(): Adapter<Data> = TestQuery_ResponseAdapter.Data.obj()
+  override fun adapter(): Adapter<Data> = ADAPTER
 
-  override fun rootField(): CompiledField = CompiledField.Builder(
-    name = "data",
-    type = CompiledQuery.type
-  )
-  .selections(selections = TestQuerySelections.__root)
-  .build()
+  override fun rootField(): CompiledField = ROOT_FIELD
 
   @ApolloAdaptableWith(TestQuery_ResponseAdapter.Data::class)
   public data class Data(
     public val hero: Hero?,
+    public val nonNullTimestamp: Timestamp,
+    public val nullableTimestamp: Timestamp?,
+    public val nonNullListOfNonNullTimestamp: List<Timestamp>,
+    public val nonNullListOfNullableTimestamp: List<Timestamp?>,
+    public val nullableListOfNonNullTimestamp: List<Timestamp>?,
+    public val nullableListOfNullableTimestamp: List<Timestamp?>?,
   ) : Query.Data {
+    public fun nonNullListOfNullableTimestampFilterNotNull(): List<Timestamp> = nonNullListOfNullableTimestamp.filterNotNull()
+
+    public fun nullableListOfNullableTimestampFilterNotNull(): List<Timestamp>? = nullableListOfNullableTimestamp?.filterNotNull()
+
     public data class Hero(
       /**
        * The ID of the character
        */
-      public val id: Long,
+      public val id: CharacterID,
       /**
        * The name of the character
        */
@@ -87,9 +94,18 @@ public class TestQuery() : Query<TestQuery.Data> {
     )
   }
 
-  public companion object {
+  public companion object : ExecutableDefinition<Data> {
+    override val ADAPTER: Adapter<Data> = TestQuery_ResponseAdapter.Data.obj()
+
+    override val ROOT_FIELD: CompiledField = CompiledField.Builder(
+          name = "data",
+          type = CompiledQuery.type
+        )
+        .selections(selections = TestQuerySelections.__root)
+        .build()
+
     public const val OPERATION_ID: String =
-        "1d5498a23394700442413af8ec1b8edce1445ce533afdb2e9d5ec9c0ed40a9e3"
+        "60b4c0088b4e38080bd241601da65e11cc8fedf8a7d91571a4f4d39ccccb084f"
 
     /**
      * The minimized GraphQL document being sent to the server to save a few bytes.
@@ -106,11 +122,17 @@ public class TestQuery() : Query<TestQuery.Data> {
      *     profileLink
      *     links
      *   }
+     *   nonNullTimestamp
+     *   nullableTimestamp
+     *   nonNullListOfNonNullTimestamp
+     *   nonNullListOfNullableTimestamp
+     *   nullableListOfNonNullTimestamp
+     *   nullableListOfNullableTimestamp
      * }
      * ```
      */
     public val OPERATION_DOCUMENT: String
-      get() = "query TestQuery { hero { id name birthDate appearanceDates fieldWithUnsupportedType profileLink links } }"
+      get() = "query TestQuery { hero { id name birthDate appearanceDates fieldWithUnsupportedType profileLink links } nonNullTimestamp nullableTimestamp nonNullListOfNonNullTimestamp nonNullListOfNullableTimestamp nullableListOfNonNullTimestamp nullableListOfNullableTimestamp }"
 
     public const val OPERATION_NAME: String = "TestQuery"
   }

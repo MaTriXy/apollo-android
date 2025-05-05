@@ -23,7 +23,6 @@ import com.apollographql.apollo.interceptor.AutoPersistedQueryInterceptor
 import com.apollographql.apollo.interceptor.DefaultInterceptorChain
 import com.apollographql.apollo.interceptor.NetworkInterceptor
 import com.apollographql.apollo.interceptor.RetryOnErrorInterceptor
-import com.apollographql.apollo.internal.ApolloClientListener
 import com.apollographql.apollo.internal.defaultDispatcher
 import com.apollographql.apollo.network.NetworkTransport
 import com.apollographql.apollo.network.http.BatchingHttpInterceptor
@@ -82,10 +81,11 @@ private constructor(
   val subscriptionNetworkTransport: NetworkTransport
   val interceptors: List<ApolloInterceptor> = builder.interceptors
   val customScalarAdapters: CustomScalarAdapters = builder.customScalarAdapters
+  val cacheInterceptor: ApolloInterceptor? = builder.cacheInterceptor
+  private val autoPersistedQueryInterceptor: ApolloInterceptor? = builder.autoPersistedQueryInterceptor
   private val retryOnError: ((ApolloRequest<*>) -> Boolean)? = builder.retryOnError
   private val retryOnErrorInterceptor: ApolloInterceptor? = builder.retryOnErrorInterceptor
   private val failFastIfOffline = builder.failFastIfOffline
-  private val listeners = builder.listeners
 
   override val executionContext: ExecutionContext = builder.executionContext
   override val httpMethod: HttpMethod? = builder.httpMethod
@@ -94,20 +94,21 @@ private constructor(
   override val sendDocument: Boolean? = builder.sendDocument
   override val enableAutoPersistedQueries: Boolean? = builder.enableAutoPersistedQueries
   override val canBeBatched: Boolean? = builder.canBeBatched
+  override val ignoreUnknownKeys: Boolean? = builder.ignoreUnknownKeys
 
   init {
     networkTransport = if (builder.networkTransport != null) {
       check(builder.httpServerUrl == null) {
-        "Apollo: 'httpServerUrl' has no effect if 'networkTransport' is set"
+        "Apollo: 'httpServerUrl' has no effect if 'networkTransport' is set. Configure httpServerUrl on the networkTransport directly."
       }
       check(builder.httpEngine == null) {
-        "Apollo: 'httpEngine' has no effect if 'networkTransport' is set"
+        "Apollo: 'httpEngine' or 'okHttpClient' has no effect if 'networkTransport' is set. Configure httpEngine on the networkTransport directly."
       }
       check(builder.httpInterceptors.isEmpty()) {
-        "Apollo: 'addHttpInterceptor' has no effect if 'networkTransport' is set"
+        "Apollo: 'addHttpInterceptor' has no effect if 'networkTransport' is set. Configure the interceptors on the networkTransport directly."
       }
       check(builder.httpExposeErrorBody == null) {
-        "Apollo: 'httpExposeErrorBody' has no effect if 'networkTransport' is set"
+        "Apollo: 'httpExposeErrorBody' has no effect if 'networkTransport' is set. Configure httpExposeErrorBody on the networkTransport directly."
       }
       builder.networkTransport!!
     } else {
@@ -130,22 +131,22 @@ private constructor(
 
     subscriptionNetworkTransport = if (builder.subscriptionNetworkTransport != null) {
       check(builder.webSocketServerUrl == null) {
-        "Apollo: 'webSocketServerUrl' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'webSocketServerUrl' has no effect if 'subscriptionNetworkTransport' is set. Configure webSocketServerUrl on the subscriptionNetworkTransport directly."
       }
       check(builder.webSocketEngine == null) {
-        "Apollo: 'webSocketEngine' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'webSocketEngine' or 'okHttpClient' has no effect if 'subscriptionNetworkTransport' is set. Configure webSocketEngine on the subscriptionNetworkTransport directly."
       }
       check(builder.webSocketIdleTimeoutMillis == null) {
-        "Apollo: 'webSocketIdleTimeoutMillis' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'webSocketIdleTimeoutMillis' has no effect if 'subscriptionNetworkTransport' is set. Configure webSocketIdleTimeoutMillis on the subscriptionNetworkTransport directly."
       }
       check(builder.wsProtocolFactory == null) {
-        "Apollo: 'wsProtocolFactory' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'wsProtocolFactory' has no effect if 'subscriptionNetworkTransport' is set. Configure wsProtocolFactory on the subscriptionNetworkTransport directly."
       }
       check(builder.webSocketReopenWhen == null) {
-        "Apollo: 'webSocketReopenWhen' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'webSocketReopenWhen' has no effect if 'subscriptionNetworkTransport' is set. Configure webSocketReopenWhen on the subscriptionNetworkTransport directly."
       }
       check(builder.webSocketReopenServerUrl == null) {
-        "Apollo: 'webSocketReopenServerUrl' has no effect if 'subscriptionNetworkTransport' is set"
+        "Apollo: 'webSocketReopenServerUrl' has no effect if 'subscriptionNetworkTransport' is set. Configure webSocketReopenServerUrl on the subscriptionNetworkTransport directly."
       }
       builder.subscriptionNetworkTransport!!
     } else {
@@ -206,12 +207,6 @@ private constructor(
     return ApolloCall(this, subscription)
   }
 
-  @Deprecated("Use close() instead", ReplaceWith("close()"), level = DeprecationLevel.ERROR)
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  fun dispose() {
-    close()
-  }
-
   /**
    * Disposes resources held by this [ApolloClient]. On JVM platforms, resources are ultimately garbage collected but calling [close] is necessary
    * on other platform or to reclaim those resources earlier.
@@ -251,35 +246,17 @@ private constructor(
       throwing: Boolean,
   ): Flow<ApolloResponse<D>> {
     val flow = channelFlow {
-      listeners.forEach {
-        it.requestStarted(apolloRequest)
-      }
-
-      try {
-        withContext(concurrencyInfo.dispatcher) {
-          apolloResponses(apolloRequest, throwing).collect {
-            send(it)
-          }
-        }
-      } finally {
-        listeners.forEach {
-          it.requestCompleted(apolloRequest)
+      withContext(concurrencyInfo.dispatcher) {
+        apolloResponses(apolloRequest, throwing).collect {
+          send(it)
         }
       }
     }
 
-    return flow
-        /**
-         * The `Unconfined` dispatcher is needed to let the IdlingResource monitor collection synchronously. Without this, `channelFlow` dispatches and the current stack frame terminates with the IdlingResource still being idle.
-         *
-         * See [idlingResourceSingleQuery](https://github.com/apollographql/apollo-kotlin/blob/215a845f38bcdfc9c72ffc7c58d077ac54e297bb/tests/idling-resource/src/test/java/IdlingResourceTest.kt#L33).
-         * See https://slack-chats.kotlinlang.org/t/16714036/can-i-have-a-channelflow-that-does-not-dispatch-until-after-#d48ebff5-676e-4109-8dd5-b2320245faa3.
-         */
-        .flowOn(Dispatchers.Unconfined)
-        /**
-         * Default to [Channel.UNLIMITED] so as not to lose any item. If a consumer is very slow, the channel may grow boundless. The caller should call [buffer] and change the default in those cases.
-         */
-        .buffer(Channel.UNLIMITED)
+    /**
+     * Default to [Channel.UNLIMITED] so as not to lose any item. If a consumer is very slow, the channel may grow boundless. The caller should call [buffer] and change the default in those cases.
+     */
+    return flow.buffer(Channel.UNLIMITED)
   }
 
   internal fun <D : Operation.Data> apolloResponses(
@@ -311,10 +288,18 @@ private constructor(
 
       retryOnError(retryOnError ?: apolloClient.retryOnError?.invoke(apolloRequest))
       failFastIfOffline(failFastIfOffline ?: apolloClient.failFastIfOffline)
+
+      ignoreUnknownKeys(ignoreUnknownKeys ?: apolloClient.ignoreUnknownKeys)
     }.build()
 
     val allInterceptors = buildList {
       addAll(interceptors)
+      if (cacheInterceptor != null) {
+        add(cacheInterceptor)
+      }
+      if (autoPersistedQueryInterceptor != null) {
+        add(autoPersistedQueryInterceptor)
+      }
       add(retryOnErrorInterceptor ?: RetryOnErrorInterceptor())
       add(networkInterceptor)
     }
@@ -353,9 +338,6 @@ private constructor(
     private val _httpInterceptors: MutableList<HttpInterceptor> = mutableListOf()
     val httpInterceptors: List<HttpInterceptor> = _httpInterceptors
 
-    private val _listeners: MutableList<ApolloClientListener> = mutableListOf()
-    internal val listeners: List<ApolloClientListener> = _listeners
-
     override var executionContext: ExecutionContext = ExecutionContext.Empty
       private set
     override var httpMethod: HttpMethod? = null
@@ -369,6 +351,8 @@ private constructor(
     override var enableAutoPersistedQueries: Boolean? = null
       private set
     override var canBeBatched: Boolean? = null
+      private set
+    override var ignoreUnknownKeys: Boolean? = null
       private set
     var networkTransport: NetworkTransport? = null
       private set
@@ -405,6 +389,12 @@ private constructor(
 
     @ApolloExperimental
     var failFastIfOffline: Boolean? = null
+      private set
+
+    var cacheInterceptor: ApolloInterceptor? = null
+      private set
+
+    var autoPersistedQueryInterceptor: ApolloInterceptor? = null
       private set
 
     /**
@@ -464,6 +454,24 @@ private constructor(
     @ApolloExperimental
     fun retryOnErrorInterceptor(retryOnErrorInterceptor: ApolloInterceptor?) = apply {
       this.retryOnErrorInterceptor = retryOnErrorInterceptor
+    }
+
+    /**
+     * Sets the [ApolloInterceptor] used for caching.
+     *
+     * @see addInterceptor
+     */
+    fun cacheInterceptor(cacheInterceptor: ApolloInterceptor?) = apply {
+      this.cacheInterceptor = cacheInterceptor
+    }
+
+    /**
+     * Sets the [ApolloInterceptor] used for auto persisted queries.
+     *
+     * @see addInterceptor
+     */
+    fun autoPersistedQueriesInterceptor(autoPersistedQueryInterceptor: ApolloInterceptor?) = apply {
+      this.autoPersistedQueryInterceptor = autoPersistedQueryInterceptor
     }
 
     /**
@@ -555,6 +563,13 @@ private constructor(
      */
     override fun canBeBatched(canBeBatched: Boolean?): Builder = apply {
       this.canBeBatched = canBeBatched
+    }
+
+    /**
+     * Sets whether to ignore the unknown keys in the JSON response.
+     */
+    override fun ignoreUnknownKeys(ignoreUnknownKeys: Boolean?): Builder = apply {
+      this.ignoreUnknownKeys = ignoreUnknownKeys
     }
 
     /**
@@ -773,17 +788,6 @@ private constructor(
       _customScalarAdaptersBuilder.add(customScalarType, customScalarAdapter)
     }
 
-    @ApolloInternal
-    fun addListener(listener: ApolloClientListener) = apply {
-      _listeners.add(listener)
-    }
-
-    @ApolloInternal
-    fun listeners(listeners: List<ApolloClientListener>) = apply {
-      _listeners.clear()
-      _listeners.addAll(listeners)
-    }
-
     /**
      * Adds an [ApolloInterceptor] to this [ApolloClient].
      *
@@ -791,8 +795,18 @@ private constructor(
      * such as normalized cache and auto persisted queries. [ApolloClient] also inserts a terminating [ApolloInterceptor] that
      * executes the request.
      *
-     * **The order is important**. The [ApolloInterceptor]s are executed in the order they are added. Because cache and APQs also
-     * use interceptors, the order of the cache/APQs configuration also influences the final interceptor list.
+     * **The order is important**. The [ApolloInterceptor]s are added in the order they are added and always added before
+     * the built-in intercepted:
+     *
+     * - user interceptors
+     * - cacheInterceptor
+     * - autoPersistedQueriesInterceptor
+     * - retryOnErrorInterceptor
+     * - networkInterceptor
+     *
+     * @see cacheInterceptor
+     * @see autoPersistedQueriesInterceptor
+     * @see retryOnErrorInterceptor
      */
     fun addInterceptor(interceptor: ApolloInterceptor) = apply {
       _interceptors.add(interceptor)
@@ -817,7 +831,7 @@ private constructor(
      * **The order is important**. The [ApolloInterceptor]s are executed in the order they are added. Because cache and APQs also
      * use interceptors, the order of the cache/APQs configuration also influences the final interceptor list.
      */
-    @Deprecated("Use addInterceptor() or interceptors()")
+    @Deprecated("Use addInterceptor() or interceptors()", level = DeprecationLevel.ERROR)
     @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
     fun addInterceptors(interceptors: List<ApolloInterceptor>) = apply {
       this._interceptors += interceptors
@@ -878,8 +892,7 @@ private constructor(
         httpMethodForDocumentQueries: HttpMethod = HttpMethod.Post,
         enableByDefault: Boolean = true,
     ) = apply {
-      _interceptors.removeAll { it is AutoPersistedQueryInterceptor }
-      addInterceptor(
+      autoPersistedQueriesInterceptor(
           AutoPersistedQueryInterceptor(
               httpMethodForHashedQueries,
               httpMethodForDocumentQueries
@@ -915,9 +928,9 @@ private constructor(
      * Creates an [ApolloClient] from this [Builder]
      */
     fun build(): ApolloClient {
-      return ApolloClient(
-          this.copy()
-      )
+      // Copy the builder so that any subsequent modifications of the builder
+      // doesn't change the ApolloClient owned one
+      return ApolloClient(copy())
     }
 
     fun copy(): Builder {
@@ -936,6 +949,7 @@ private constructor(
           .sendDocument(sendDocument)
           .enableAutoPersistedQueries(enableAutoPersistedQueries)
           .canBeBatched(canBeBatched)
+          .ignoreUnknownKeys(ignoreUnknownKeys)
           .networkTransport(networkTransport)
           .subscriptionNetworkTransport(subscriptionNetworkTransport)
           .webSocketServerUrl(webSocketServerUrl)
@@ -946,15 +960,9 @@ private constructor(
           .wsProtocol(wsProtocolFactory)
           .retryOnError(retryOnError)
           .retryOnErrorInterceptor(retryOnErrorInterceptor)
+          .cacheInterceptor(cacheInterceptor)
+          .autoPersistedQueriesInterceptor(autoPersistedQueryInterceptor)
           .failFastIfOffline(failFastIfOffline)
-          .listeners(listeners)
     }
-  }
-
-  companion object {
-    @Deprecated("Used for backward compatibility with 2.x", ReplaceWith("ApolloClient.Builder()"), level = DeprecationLevel.ERROR)
-    @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v3_0_0)
-    @JvmStatic
-    fun builder() = Builder()
   }
 }

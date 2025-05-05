@@ -29,6 +29,7 @@ import com.apollographql.apollo.mpp.currentTimeMillis
 import com.apollographql.apollo.network.NetworkTransport
 import com.benasher44.uuid.Uuid
 import com.benasher44.uuid.uuid4
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
@@ -55,27 +56,30 @@ private constructor(
     return execute(request, httpRequest, customScalarAdapters)
   }
 
-  fun <D : Operation.Data> execute(
+  internal fun <D : Operation.Data> execute(
       request: ApolloRequest<D>,
       httpRequest: HttpRequest,
       customScalarAdapters: CustomScalarAdapters,
   ): Flow<ApolloResponse<D>> {
     return flow {
       val millisStart = currentTimeMillis()
-      var apolloException: ApolloException? = null
+      var throwable: Throwable? = null
       val httpResponse: HttpResponse? = try {
         DefaultHttpInterceptorChain(
             interceptors = interceptors + engineInterceptor,
             index = 0
         ).proceed(httpRequest)
-      } catch (e: ApolloException) {
-        apolloException = e
+      } catch (t: Throwable) {
+        if (t is CancellationException) {
+          throw t
+        }
+        throwable = t
         null
       }
 
       val responses = when {
         httpResponse == null -> {
-          flowOf(errorResponse(request.operation, apolloException!!))
+          flowOf(errorResponse(request.operation, throwable!!))
         }
 
         httpResponse.statusCode !in 200..299 && !httpResponse.isGraphQLResponse -> {
@@ -92,11 +96,11 @@ private constructor(
         // When using @defer, the response contains multiple parts, using the multipart content type.
         // See https://github.com/graphql/graphql-over-http/blob/main/rfcs/IncrementalDelivery.md
         httpResponse.isMultipart -> {
-          multipleResponses(request.operation, customScalarAdapters, httpResponse)
+          multipleResponses(request, customScalarAdapters, httpResponse)
         }
 
         else -> {
-          singleResponse(request.operation, customScalarAdapters, httpResponse)
+          singleResponse(request, customScalarAdapters, httpResponse)
         }
       }
 
@@ -144,11 +148,15 @@ private constructor(
   }
 
   private fun <D : Operation.Data> singleResponse(
-      operation: Operation<D>,
+      request: ApolloRequest<D>,
       customScalarAdapters: CustomScalarAdapters,
       httpResponse: HttpResponse,
   ): Flow<ApolloResponse<D>> {
-    val response = httpResponse.body!!.jsonReader().toApolloResponse(
+    val operation = request.operation
+
+    val response = httpResponse.body!!.jsonReader()
+        .apply { ignoreUnknownKeys(request.ignoreUnknownKeys ?: true) }
+        .toApolloResponse(
         operation,
         customScalarAdapters = customScalarAdapters,
         deferredFragmentIdentifiers = null,
@@ -158,16 +166,17 @@ private constructor(
   }
 
   private fun <D : Operation.Data> multipleResponses(
-      operation: Operation<D>,
+      request: ApolloRequest<D>,
       customScalarAdapters: CustomScalarAdapters,
       httpResponse: HttpResponse,
   ): Flow<ApolloResponse<D>> {
     var jsonMerger: DeferredJsonMerger? = null
+    val operation = request.operation
 
     return multipartBodyFlow(httpResponse)
         .mapNotNull { part ->
           if (operation is Subscription) {
-            val reader = part.jsonReader()
+            val reader = part.jsonReader().apply { ignoreUnknownKeys(request.ignoreUnknownKeys ?: true) }
             var payloadResponse: ApolloResponse<D>? = null
             var errors: List<Error>? = null
             reader.beginObject()
@@ -212,11 +221,11 @@ private constructor(
             if (jsonMerger == null) {
               jsonMerger = DeferredJsonMerger()
             }
-            val merged = jsonMerger!!.merge(part)
-            val deferredFragmentIds = jsonMerger!!.mergedFragmentIds
-            val isLast = !jsonMerger!!.hasNext
+            val merged = jsonMerger.merge(part)
+            val deferredFragmentIds = jsonMerger.mergedFragmentIds
+            val isLast = !jsonMerger.hasNext
 
-            if (jsonMerger!!.isEmptyPayload) {
+            if (jsonMerger.isEmptyPayload) {
               null
             } else {
               @Suppress("DEPRECATION")
@@ -315,13 +324,13 @@ private constructor(
       this.exposeErrorBody = exposeErrorBody
     }
 
-    @Deprecated("Use ApolloClient.Builder.addHttpHeader() instead")
+    @Deprecated("Use ApolloClient.Builder.addHttpHeader() instead", level = DeprecationLevel.ERROR)
     @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
     fun addHttpHeader(name: String, value: String) = apply {
       headers.add(HttpHeader(name, value))
     }
 
-    @Deprecated("Use ApolloClient.Builder.httpHeader() instead")
+    @Deprecated("Use ApolloClient.Builder.httpHeader() instead", level = DeprecationLevel.ERROR)
     @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
     fun httpHeaders(headers: List<HttpHeader>) = apply {
       // In case this builder comes from newBuilder(), remove any existing interceptor
@@ -372,15 +381,6 @@ private constructor(
         chain: HttpInterceptorChain,
     ): HttpResponse {
       return chain.proceed(request.newBuilder().addHeaders(headers).build())
-    }
-  }
-
-
-  private companion object {
-    enum class Kind {
-      EMPTY,
-      PAYLOAD,
-      OTHER,
     }
   }
 }

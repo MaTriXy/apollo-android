@@ -1,6 +1,11 @@
 package com.apollographql.apollo.compiler.ir
 
+import com.apollographql.apollo.annotations.ApolloInternal
+import com.apollographql.apollo.ast.ConversionException
+import com.apollographql.apollo.ast.GQLBooleanValue
+import com.apollographql.apollo.ast.GQLDirective
 import com.apollographql.apollo.ast.GQLEnumTypeDefinition
+import com.apollographql.apollo.ast.GQLEnumValue
 import com.apollographql.apollo.ast.GQLEnumValueDefinition
 import com.apollographql.apollo.ast.GQLFieldDefinition
 import com.apollographql.apollo.ast.GQLInputObjectTypeDefinition
@@ -9,8 +14,10 @@ import com.apollographql.apollo.ast.GQLInterfaceTypeDefinition
 import com.apollographql.apollo.ast.GQLListType
 import com.apollographql.apollo.ast.GQLNamedType
 import com.apollographql.apollo.ast.GQLNonNullType
+import com.apollographql.apollo.ast.GQLNullValue
 import com.apollographql.apollo.ast.GQLObjectTypeDefinition
 import com.apollographql.apollo.ast.GQLScalarTypeDefinition
+import com.apollographql.apollo.ast.GQLStringValue
 import com.apollographql.apollo.ast.GQLType
 import com.apollographql.apollo.ast.GQLUnionTypeDefinition
 import com.apollographql.apollo.ast.Schema
@@ -57,15 +64,10 @@ internal data class IrInputObject(
 internal data class IrObject(
     override val name: String,
     val implements: List<String>,
-    /**
-     * contrary to [implements], [superTypes] also includes unions
-     */
-    val superTypes: List<String>,
     val keyFields: List<String>,
     val description: String?,
     val deprecationReason: String?,
     val embeddedFields: List<String>,
-    val mapProperties: List<IrMapProperty>,
     val fieldDefinitions: List<IrFieldDefinition>,
 ) : IrSchemaType
 
@@ -78,7 +80,6 @@ internal data class IrInterface(
     val description: String?,
     val deprecationReason: String?,
     val embeddedFields: List<String>,
-    val mapProperties: List<IrMapProperty>,
     val fieldDefinitions: List<IrFieldDefinition>,
 ) : IrSchemaType
 
@@ -95,31 +96,11 @@ internal data class IrScalar(
     override val name: String,
     val description: String?,
     val deprecationReason: String?,
+    val mapTo: MapTo?,
+    val mapToBuiltIn: MapToBuiltIn?,
 ) : IrSchemaType {
   val type = IrScalarType(name, nullable = true)
 }
-
-/**
- * This is a separate type from [IrType] because [IrType] is quite big already. We might
- * want to refactor our type handling at some point
- */
-@Serializable
-internal sealed interface IrType2
-
-@Serializable
-internal class IrNonNullType2(val ofType: IrType2) : IrType2
-
-@Serializable
-internal class IrListType2(val ofType: IrType2) : IrType2
-
-@Serializable
-internal class IrScalarType2(val name: String) : IrType2
-
-@Serializable
-internal class IrEnumType2(val name: String) : IrType2
-
-@Serializable
-internal class IrCompositeType2(val name: String) : IrType2
 
 @Serializable
 internal data class IrArgumentDefinition(
@@ -135,16 +116,12 @@ internal data class IrArgumentDefinition(
   }
 }
 
-@Serializable
-internal data class IrMapProperty(
-    val name: String,
-    val type: IrType2,
-)
-
+/**
+ * We're not using the field name and type in the codegen.
+ * The field names are directly used in keyFields
+ */
 @Serializable
 internal data class IrFieldDefinition(
-    val name: String,
-    val type: IrType2,
     val argumentDefinitions: List<IrArgumentDefinition>,
 )
 
@@ -211,12 +188,110 @@ internal fun GQLUnionTypeDefinition.toIr(): IrUnion {
   )
 }
 
-internal fun GQLScalarTypeDefinition.toIr(): IrScalar {
+internal fun GQLScalarTypeDefinition.toIr(schema: Schema, usedCoordinates: UsedCoordinates): IrScalar {
+  val mapTo = findMapTo(schema = schema)
+  if(mapTo != null) {
+    /**
+     * Always generate the types for the custom scalars with a mapping, so that users can use `Foo.type` when registering them.
+     */
+    usedCoordinates.putType(name)
+  }
   return IrScalar(
       name = name,
       description = description,
-      // XXX: this is not spec-compliant. Directive cannot be on scalar definitions
-      deprecationReason = directives.findDeprecationReason()
+      // XXX: this is not spec-compliant. Scalar definitions do not have deprecation
+      deprecationReason = directives.findDeprecationReason(),
+      mapTo = mapTo,
+      mapToBuiltIn = directives.findMapToBuiltin(schema),
+  )
+}
+
+
+@Serializable
+internal class MapTo(
+    val name: String,
+    val adapter: String?,
+    val inlineProperty: String?
+)
+
+@Serializable
+internal enum class BuiltInType {
+  String, Boolean, Int, Long, Float, Double
+}
+
+@Serializable
+internal class MapToBuiltIn(
+    val builtIn: BuiltInType,
+    val inline: Boolean,
+)
+
+@ApolloInternal
+internal fun List<GQLDirective>.findMapToBuiltin(schema: Schema): MapToBuiltIn? {
+  val directive = firstOrNull { schema.originalDirectiveName(it.name) == Schema.MAP_TO }
+  if (directive == null) {
+    return null
+  }
+
+  val builtInValue = directive.arguments.firstOrNull { it.name == "builtIn" }?.value
+  val inlineValue = directive.arguments.firstOrNull { it.name == "inline" }?.value ?: GQLBooleanValue(null, true)
+
+  val builtIn = when(builtInValue) {
+    is GQLEnumValue -> BuiltInType.entries.firstOrNull { it.name == builtInValue.value } ?: throw ConversionException("Apollo: unknown builtin type '${builtInValue.value}'")
+    else ->  {
+      throw ConversionException("Apollo: 'as' must be an enum (found '${builtInValue}')")
+    }
+  }
+
+  val inline = when (inlineValue) {
+    is GQLBooleanValue -> inlineValue.value
+    else -> {
+      throw ConversionException("Apollo: 'inline' must be a boolean (found '${inlineValue}')")
+    }
+  }
+
+  return MapToBuiltIn(
+      builtIn = builtIn,
+      inline = inline,
+  )
+}
+
+internal fun GQLScalarTypeDefinition.findMapTo(schema: Schema): MapTo? {
+  val directive = directives.firstOrNull { schema.originalDirectiveName(it.name) == Schema.MAP }
+  if (directive == null) {
+    return null
+  }
+
+  val to = directive.arguments.firstOrNull { it.name == "to" }?.value
+  val with = directive.arguments.firstOrNull { it.name == "with" }?.value ?: GQLNullValue()
+  val inlineProperty = directive.arguments.firstOrNull { it.name == "inlineProperty" }?.value ?: GQLNullValue()
+
+  val name = when(to) {
+    is GQLStringValue -> to.value
+    else ->  {
+      throw ConversionException("Apollo: 'to' must be a string (found '${to}')")
+    }
+  }
+
+  val adapter = when (with) {
+    is GQLStringValue -> with.value
+    is GQLNullValue -> null
+    else -> {
+      throw ConversionException("Apollo: 'with' must be a String (found '${with}')")
+    }
+  }
+
+  val property = when(inlineProperty) {
+    is GQLStringValue -> inlineProperty.value
+    is GQLNullValue -> null
+    else ->  {
+      throw ConversionException("Apollo: 'inlineProperty' must be a string (found '${inlineProperty}')")
+    }
+  }
+
+  return MapTo(
+      name = name,
+      adapter = adapter,
+      inlineProperty = property
   )
 }
 
@@ -243,11 +318,6 @@ internal fun GQLInterfaceTypeDefinition.toIr(schema: Schema, usedCoordinates: Us
       embeddedFields = directives.filter { schema.originalDirectiveName(it.name) == TYPE_POLICY }.toEmbeddedFields() +
           directives.filter { schema.originalDirectiveName(it.name) == TYPE_POLICY }.toConnectionFields() +
           connectionTypeEmbeddedFields(name, schema),
-      mapProperties = this.fields.filter {
-        usedCoordinates.hasField(type = name, field = it.name)
-      }.map {
-        it.toIrMapProperty(schema)
-      },
       fieldDefinitions = this.fieldDefinitions(schema).filter {
         usedCoordinates.hasField(type = name, field = it.name)
       }.mapNotNull {
@@ -257,7 +327,6 @@ internal fun GQLInterfaceTypeDefinition.toIr(schema: Schema, usedCoordinates: Us
       },
   )
 }
-
 
 /**
  * If [typeName] is declared as a Relay Connection type (via the `@typePolicy` directive), return the standard arguments
@@ -283,11 +352,6 @@ internal fun GQLObjectTypeDefinition.toIr(schema: Schema, usedCoordinates: UsedC
       embeddedFields = directives.filter { schema.originalDirectiveName(it.name) == TYPE_POLICY }.toEmbeddedFields() +
           directives.filter { schema.originalDirectiveName(it.name) == TYPE_POLICY }.toConnectionFields() +
           connectionTypeEmbeddedFields(name, schema),
-      mapProperties = this.fields.filter {
-        usedCoordinates.hasField(type = name, field = it.name)
-      }.map {
-        it.toIrMapProperty(schema)
-      },
       fieldDefinitions = this.fieldDefinitions(schema).filter {
         usedCoordinates.hasField(type = name, field = it.name)
       }.mapNotNull {
@@ -295,14 +359,6 @@ internal fun GQLObjectTypeDefinition.toIr(schema: Schema, usedCoordinates: UsedC
             // Only include fields that have arguments used in operations
             .takeIf { it.argumentDefinitions.isNotEmpty() }
       },
-      superTypes = schema.superTypes(this).toList()
-  )
-}
-
-private fun GQLFieldDefinition.toIrMapProperty(schema: Schema): IrMapProperty {
-  return IrMapProperty(
-      name,
-      type.toIrType2(schema)
   )
 }
 
@@ -315,8 +371,6 @@ private fun GQLFieldDefinition.toIrFieldDefinition(
   val keyArgs = typeDefinition.keyArgs(name, schema)
   val paginationArgs = typeDefinition.paginationArgs(name, schema)
   return IrFieldDefinition(
-      name = name,
-      type = type.toIrType2(schema),
       argumentDefinitions = arguments.mapNotNull {
         // We only include arguments that are used in operations
         if (!usedCoordinates.hasArgument(type = parentType, field = name, argument = it.name)) {
@@ -333,25 +387,6 @@ private fun GQLFieldDefinition.toIrFieldDefinition(
       }
   )
 }
-
-private fun GQLType.toIrType2(schema: Schema): IrType2 {
-  return when (this) {
-    is GQLNonNullType -> IrNonNullType2(type.toIrType2(schema))
-    is GQLListType -> IrListType2(type.toIrType2(schema))
-    is GQLNamedType -> {
-      when (schema.typeDefinition(name)) {
-        is GQLScalarTypeDefinition -> return IrScalarType2(name)
-        is GQLEnumTypeDefinition -> return IrEnumType2(name)
-        is GQLInputObjectTypeDefinition -> error("Input objects are not supported in data builders")
-        is GQLInterfaceTypeDefinition,
-        is GQLObjectTypeDefinition,
-        is GQLUnionTypeDefinition,
-        -> IrCompositeType2(name)
-      }
-    }
-  }
-}
-
 
 /**
  * This is not named `toIr` as [GQLInputValueDefinition] also maps to variables and arguments

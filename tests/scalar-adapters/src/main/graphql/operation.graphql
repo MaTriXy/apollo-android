@@ -25,3 +25,14 @@ query Address {
 query Decimal {
   decimal
 }
+
+query InlineClass {
+  nonNullableLength
+  nullableLength
+  nonNullableLengthList
+  lengthListList
+}
+
+query Variables($length: Length!, $input: MyInput!) {
+  fieldWitArgs(length: $length, input: $input)
+}

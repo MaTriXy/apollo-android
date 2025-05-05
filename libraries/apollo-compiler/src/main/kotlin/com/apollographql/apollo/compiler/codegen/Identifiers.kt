@@ -13,6 +13,7 @@ internal object Identifier {
   const val type = "type"
   const val customScalarAdapters = "customScalarAdapters"
   const val value = "value"
+  const val inlinePropertyValue = "value"
   const val reader = "reader"
   const val writer = "writer"
   const val build = "build"
@@ -50,6 +51,8 @@ internal object Identifier {
   const val OPERATION_NAME = "OPERATION_NAME"
   const val OPERATION_ID = "OPERATION_ID"
   const val RESPONSE_NAMES = "RESPONSE_NAMES"
+  const val ADAPTER = "ADAPTER"
+  const val ROOT_FIELD = "ROOT_FIELD"
 
   const val Empty = "Empty"
 

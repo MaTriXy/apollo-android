@@ -11,7 +11,9 @@ import com.apollographql.apollo.testing.internal.runTest
 import com.benasher44.uuid.uuid4
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.toList
-import testnetworktransport.type.buildDroid
+import testnetworktransport.builder.Data
+import testnetworktransport.builder.buildDroid
+import testnetworktransport.builder.resolver.DefaultFakeResolver
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -90,7 +92,7 @@ class QueueTestNetworkTransportHandlerTest {
             Error.Builder(message = "There was an error")
                 .locations(listOf(Error.Location(line = 1, column = 2)))
                 .path(listOf("hero", "name"))
-                .putExtension("myExtension", true)
+                .extensions(mapOf<String, Any?>("myExtension" to true))
                 .build()
         )
     )
@@ -115,7 +117,7 @@ class QueueTestNetworkTransportHandlerTest {
   @Test
   fun enqueueDataTestBuilder() = runTest(before = { setUp() }, after = { tearDown() }) {
     val query = GetHeroQuery("001")
-    val testData = GetHeroQuery.Data {
+    val testData = GetHeroQuery.Data(DefaultFakeResolver()) {
       hero = buildDroid {
         name = "R2D2"
       }

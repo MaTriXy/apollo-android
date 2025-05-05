@@ -230,4 +230,3 @@ fun <D : Operation.Data> JsonReader.parseResponse(
         .build()
   }
 }
-

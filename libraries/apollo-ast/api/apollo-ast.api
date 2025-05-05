@@ -10,16 +10,26 @@ public abstract interface class com/apollographql/apollo/ast/ApolloIssue : com/a
 public final class com/apollographql/apollo/ast/ApolloParser {
 	public static final fun parseAsGQLDocument (Ljava/io/File;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun parseAsGQLDocument (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun parseAsGQLDocument (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun parseAsGQLDocument (Lokio/Path;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLDocument$default (Ljava/io/File;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLDocument$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static synthetic fun parseAsGQLDocument$default (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLDocument$default (Lokio/Path;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun parseAsGQLSelections (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun parseAsGQLSelections (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLSelections$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static synthetic fun parseAsGQLSelections$default (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun parseAsGQLType (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun parseAsGQLType (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLType$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static synthetic fun parseAsGQLType$default (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun parseAsGQLValue (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun parseAsGQLValue (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static synthetic fun parseAsGQLValue$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static synthetic fun parseAsGQLValue$default (Lokio/BufferedSource;Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun toExecutableDocument (Lokio/BufferedSource;Lcom/apollographql/apollo/ast/Schema;Ljava/lang/String;)Lcom/apollographql/apollo/ast/GQLDocument;
+	public static synthetic fun toExecutableDocument$default (Lokio/BufferedSource;Lcom/apollographql/apollo/ast/Schema;Ljava/lang/String;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLDocument;
 	public static final fun toGQLDocument (Ljava/io/File;Lcom/apollographql/apollo/ast/ParserOptions;Z)Lcom/apollographql/apollo/ast/GQLDocument;
 	public static final fun toGQLDocument (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLDocument;
 	public static final fun toGQLDocument (Lokio/Path;Lcom/apollographql/apollo/ast/ParserOptions;Z)Lcom/apollographql/apollo/ast/GQLDocument;
@@ -32,6 +42,34 @@ public final class com/apollographql/apollo/ast/ApolloParser {
 	public static synthetic fun toGQLType$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLType;
 	public static final fun toGQLValue (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;)Lcom/apollographql/apollo/ast/GQLValue;
 	public static synthetic fun toGQLValue$default (Ljava/lang/String;Lcom/apollographql/apollo/ast/ParserOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLValue;
+	public static final fun toSchema (Ljava/io/File;Z)Lcom/apollographql/apollo/ast/Schema;
+	public static synthetic fun toSchema$default (Ljava/io/File;ZILjava/lang/Object;)Lcom/apollographql/apollo/ast/Schema;
+	public static final fun validateAsExecutable (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/ExecutableValidationResult;
+	public static final fun validateAsSchema (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun validateAsSchema (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/internal/SchemaValidationOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static final fun validateAsSchemaAndAddApolloDefinition (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/GQLResult;
+}
+
+public final class com/apollographql/apollo/ast/Catch {
+	public fun <init> (Lcom/apollographql/apollo/ast/CatchTo;Ljava/util/List;)V
+	public final fun component1 ()Lcom/apollographql/apollo/ast/CatchTo;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lcom/apollographql/apollo/ast/CatchTo;Ljava/util/List;)Lcom/apollographql/apollo/ast/Catch;
+	public static synthetic fun copy$default (Lcom/apollographql/apollo/ast/Catch;Lcom/apollographql/apollo/ast/CatchTo;Ljava/util/List;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/Catch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLevels ()Ljava/util/List;
+	public final fun getTo ()Lcom/apollographql/apollo/ast/CatchTo;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/apollographql/apollo/ast/CatchTo : java/lang/Enum {
+	public static final field NULL Lcom/apollographql/apollo/ast/CatchTo;
+	public static final field RESULT Lcom/apollographql/apollo/ast/CatchTo;
+	public static final field THROW Lcom/apollographql/apollo/ast/CatchTo;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/apollographql/apollo/ast/CatchTo;
+	public static fun values ()[Lcom/apollographql/apollo/ast/CatchTo;
 }
 
 public final class com/apollographql/apollo/ast/ConditionalFragment : com/apollographql/apollo/ast/ApolloIssue {
@@ -74,6 +112,22 @@ public final class com/apollographql/apollo/ast/DuplicateTypeName : com/apollogr
 	public fun <init> (Ljava/lang/String;Lcom/apollographql/apollo/ast/SourceLocation;)V
 	public fun getMessage ()Ljava/lang/String;
 	public fun getSourceLocation ()Lcom/apollographql/apollo/ast/SourceLocation;
+}
+
+public final class com/apollographql/apollo/ast/ExecutableValidationResult {
+	public fun <init> (Ljava/util/Map;Ljava/util/List;)V
+	public final fun getFragmentVariableUsages ()Ljava/util/Map;
+	public final fun getIssues ()Ljava/util/List;
+}
+
+public final class com/apollographql/apollo/ast/ForeignSchema {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDefinitions ()Ljava/util/List;
+	public final fun getDirectivesToStrip ()Ljava/util/List;
+	public final fun getName ()Ljava/lang/String;
+	public final fun getNameWithVersion ()Ljava/lang/String;
+	public final fun getVersion ()Ljava/lang/String;
 }
 
 public final class com/apollographql/apollo/ast/GQLArgument : com/apollographql/apollo/ast/GQLNamed, com/apollographql/apollo/ast/GQLNode {
@@ -254,6 +308,8 @@ public abstract interface class com/apollographql/apollo/ast/GQLExecutableDefini
 }
 
 public final class com/apollographql/apollo/ast/GQLField : com/apollographql/apollo/ast/GQLSelection, com/apollographql/apollo/ast/GQLHasDirectives, com/apollographql/apollo/ast/GQLNamed {
+	public fun <init> (Lcom/apollographql/apollo/ast/SourceLocation;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Lcom/apollographql/apollo/ast/SourceLocation;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun copy (Lcom/apollographql/apollo/ast/SourceLocation;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lcom/apollographql/apollo/ast/GQLField;
 	public static synthetic fun copy$default (Lcom/apollographql/apollo/ast/GQLField;Lcom/apollographql/apollo/ast/SourceLocation;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLField;
 	public fun copyWithNewChildrenInternal (Lcom/apollographql/apollo/ast/NodeContainer;)Lcom/apollographql/apollo/ast/GQLNode;
@@ -758,17 +814,44 @@ public final class com/apollographql/apollo/ast/GQLVariableValue : com/apollogra
 	public fun writeInternal (Lcom/apollographql/apollo/ast/SDLWriter;)V
 }
 
+public final class com/apollographql/apollo/ast/GqlKt {
+	public static final fun transform (Lcom/apollographql/apollo/ast/GQLNode;Lcom/apollographql/apollo/ast/NodeTransformer;)Lcom/apollographql/apollo/ast/GQLNode;
+}
+
 public final class com/apollographql/apollo/ast/GqldirectiveKt {
+	public static final fun findCatch (Lcom/apollographql/apollo/ast/GQLField;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/Catch;
+	public static final fun findCatch (Ljava/util/List;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/Catch;
+	public static final fun findCatchByDefault (Lcom/apollographql/apollo/ast/GQLFragmentDefinition;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/CatchTo;
+	public static final fun findCatchByDefault (Lcom/apollographql/apollo/ast/GQLOperationDefinition;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/CatchTo;
 	public static final fun findDeprecationReason (Ljava/util/List;)Ljava/lang/String;
+	public static final fun findNonnull (Ljava/util/List;Lcom/apollographql/apollo/ast/Schema;)Z
 	public static final fun findOneOf (Ljava/util/List;)Z
+	public static final fun findOptInFeature (Ljava/util/List;Lcom/apollographql/apollo/ast/Schema;)Ljava/lang/String;
+	public static final fun findSemanticNonNulls (Lcom/apollographql/apollo/ast/GQLFieldDefinition;Lcom/apollographql/apollo/ast/Schema;)Ljava/util/List;
 	public static final fun findSpecifiedBy (Ljava/util/List;)Ljava/lang/String;
+	public static final fun findTargetName (Ljava/util/List;Lcom/apollographql/apollo/ast/Schema;)Ljava/lang/String;
+	public static final fun getArgumentValueOrDefault (Lcom/apollographql/apollo/ast/GQLDirective;Ljava/lang/String;Lcom/apollographql/apollo/ast/Schema;)Lcom/apollographql/apollo/ast/GQLValue;
+	public static final fun optionalValue (Ljava/util/List;Lcom/apollographql/apollo/ast/Schema;)Ljava/lang/Boolean;
 }
 
 public final class com/apollographql/apollo/ast/GqldocumentKt {
+	public static final field AUTO_IMPORTED_KOTLIN_LABS_VERSION Ljava/lang/String;
+	public static final field KOTLIN_LABS_VERSION Ljava/lang/String;
+	public static final field NULLABILITY_VERSION Ljava/lang/String;
 	public static final fun builtinDefinitions ()Ljava/util/List;
+	public static final fun builtinForeignSchemas ()Ljava/util/List;
 	public static final fun kotlinLabsDefinitions (Ljava/lang/String;)Ljava/util/List;
 	public static final fun linkDefinitions ()Ljava/util/List;
+	public static final fun mergeExtensions (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/MergeOptions;)Lcom/apollographql/apollo/ast/GQLResult;
+	public static synthetic fun mergeExtensions$default (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/MergeOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLResult;
 	public static final fun nullabilityDefinitions (Ljava/lang/String;)Ljava/util/List;
+	public static final fun toFullSchemaGQLDocument (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/GQLDocument;
+	public static final fun toMergedGQLDocument (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/MergeOptions;)Lcom/apollographql/apollo/ast/GQLDocument;
+	public static synthetic fun toMergedGQLDocument$default (Lcom/apollographql/apollo/ast/GQLDocument;Lcom/apollographql/apollo/ast/MergeOptions;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/GQLDocument;
+	public static final synthetic fun toSDL (Lcom/apollographql/apollo/ast/GQLDocument;Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toSDL (Lcom/apollographql/apollo/ast/GQLDocument;Ljava/lang/String;Z)Ljava/lang/String;
+	public static synthetic fun toSDL$default (Lcom/apollographql/apollo/ast/GQLDocument;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public static synthetic fun toSDL$default (Lcom/apollographql/apollo/ast/GQLDocument;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;
 	public static final fun toSchema (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/Schema;
 	public static final fun withBuiltinDefinitions (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/GQLDocument;
 	public static final fun withoutBuiltinDefinitions (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/GQLDocument;
@@ -784,8 +867,10 @@ public final class com/apollographql/apollo/ast/GqlfieldKt {
 public final class com/apollographql/apollo/ast/GqlnodeKt {
 	public static final fun toUtf8 (Lcom/apollographql/apollo/ast/GQLNode;Ljava/io/File;Ljava/lang/String;)V
 	public static final fun toUtf8 (Lcom/apollographql/apollo/ast/GQLNode;Ljava/lang/String;)Ljava/lang/String;
+	public static final fun toUtf8 (Lcom/apollographql/apollo/ast/GQLNode;Lokio/BufferedSink;Ljava/lang/String;)V
 	public static synthetic fun toUtf8$default (Lcom/apollographql/apollo/ast/GQLNode;Ljava/io/File;Ljava/lang/String;ILjava/lang/Object;)V
 	public static synthetic fun toUtf8$default (Lcom/apollographql/apollo/ast/GQLNode;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public static synthetic fun toUtf8$default (Lcom/apollographql/apollo/ast/GQLNode;Lokio/BufferedSink;Ljava/lang/String;ILjava/lang/Object;)V
 }
 
 public final class com/apollographql/apollo/ast/GqloperationdefinitionKt {
@@ -810,6 +895,9 @@ public final class com/apollographql/apollo/ast/GqltypedefinitionKt {
 	public static final fun canHaveKeyFields (Lcom/apollographql/apollo/ast/GQLTypeDefinition;)Z
 	public static final fun implementsAbstractType (Lcom/apollographql/apollo/ast/GQLTypeDefinition;Lcom/apollographql/apollo/ast/Schema;)Z
 	public static final fun isAbstract (Lcom/apollographql/apollo/ast/GQLTypeDefinition;)Z
+	public static final fun isComposite (Lcom/apollographql/apollo/ast/GQLTypeDefinition;)Z
+	public static final fun isFieldNonNull (Lcom/apollographql/apollo/ast/GQLTypeDefinition;Ljava/lang/String;Lcom/apollographql/apollo/ast/Schema;)Z
+	public static synthetic fun isFieldNonNull$default (Lcom/apollographql/apollo/ast/GQLTypeDefinition;Ljava/lang/String;Lcom/apollographql/apollo/ast/Schema;ILjava/lang/Object;)Z
 	public static final fun possibleTypes (Lcom/apollographql/apollo/ast/GQLTypeDefinition;Lcom/apollographql/apollo/ast/Schema;)Ljava/util/Set;
 }
 
@@ -864,6 +952,13 @@ public final class com/apollographql/apollo/ast/IssueKt {
 	public static final fun checkValidGraphQL (Ljava/util/List;)V
 }
 
+public final class com/apollographql/apollo/ast/MergeOptions {
+	public static final field Companion Lcom/apollographql/apollo/ast/MergeOptions$Companion;
+	public fun <init> (ZZ)V
+	public final fun getAllowAddingDirectivesToExistingFieldDefinitions ()Z
+	public final fun getAllowFieldNullabilityModification ()Z
+}
+
 public final class com/apollographql/apollo/ast/MergeOptions$Companion {
 	public final fun getDefault ()Lcom/apollographql/apollo/ast/MergeOptions;
 }
@@ -879,6 +974,16 @@ public final class com/apollographql/apollo/ast/NodeContainer {
 	public final fun assert ()V
 	public final fun getRemainingNodes ()Ljava/util/List;
 	public final fun setRemainingNodes (Ljava/util/List;)V
+}
+
+public abstract interface class com/apollographql/apollo/ast/NodeTransformer {
+	public abstract fun transform (Lcom/apollographql/apollo/ast/GQLNode;)Lcom/apollographql/apollo/ast/TransformResult;
+}
+
+public final class com/apollographql/apollo/ast/NonNullUsage : com/apollographql/apollo/ast/ApolloIssue {
+	public fun <init> (Ljava/lang/String;Lcom/apollographql/apollo/ast/SourceLocation;)V
+	public fun getMessage ()Ljava/lang/String;
+	public fun getSourceLocation ()Lcom/apollographql/apollo/ast/SourceLocation;
 }
 
 public final class com/apollographql/apollo/ast/OtherValidationIssue : com/apollographql/apollo/ast/GraphQLValidationIssue {
@@ -926,39 +1031,66 @@ public final class com/apollographql/apollo/ast/ReservedEnumValueName : com/apol
 	public fun getSourceLocation ()Lcom/apollographql/apollo/ast/SourceLocation;
 }
 
+public class com/apollographql/apollo/ast/SDLWriter : java/io/Closeable {
+	public fun <init> (Lokio/BufferedSink;Ljava/lang/String;)V
+	public fun close ()V
+	public final fun indent ()V
+	public final fun unindent ()V
+	public fun write (Lcom/apollographql/apollo/ast/GQLNode;)V
+	public final fun write (Ljava/lang/String;)V
+}
+
 public final class com/apollographql/apollo/ast/Schema {
+	public static final field CATCH Ljava/lang/String;
+	public static final field CATCH_BY_DEFAULT Ljava/lang/String;
 	public static final field Companion Lcom/apollographql/apollo/ast/Schema$Companion;
+	public static final field DEFER Ljava/lang/String;
+	public static final field DISABLE_ERROR_PROPAGATION Ljava/lang/String;
 	public static final field FIELD_POLICY Ljava/lang/String;
 	public static final field FIELD_POLICY_FOR_FIELD Ljava/lang/String;
 	public static final field FIELD_POLICY_KEY_ARGS Ljava/lang/String;
+	public static final field FIELD_POLICY_PAGINATION_ARGS Ljava/lang/String;
+	public static final field LINK Ljava/lang/String;
+	public static final field MAP Ljava/lang/String;
+	public static final field MAP_TO Ljava/lang/String;
 	public static final field NONNULL Ljava/lang/String;
+	public static final field ONE_OF Ljava/lang/String;
 	public static final field OPTIONAL Ljava/lang/String;
 	public static final field REQUIRES_OPT_IN Ljava/lang/String;
+	public static final field SEMANTIC_NON_NULL Ljava/lang/String;
+	public static final field SEMANTIC_NON_NULL_FIELD Ljava/lang/String;
 	public static final field TARGET_NAME Ljava/lang/String;
 	public static final field TYPE_POLICY Ljava/lang/String;
+	public final fun getConnectionTypes ()Ljava/util/Set;
 	public final fun getDirectiveDefinitions ()Ljava/util/Map;
 	public final fun getErrorAware ()Z
 	public final fun getForeignNames ()Ljava/util/Map;
+	public final fun getGenerateDataBuilders ()Z
 	public final fun getMutationTypeDefinition ()Lcom/apollographql/apollo/ast/GQLTypeDefinition;
 	public final fun getQueryTypeDefinition ()Lcom/apollographql/apollo/ast/GQLTypeDefinition;
+	public final fun getSchemaDefinition ()Lcom/apollographql/apollo/ast/GQLSchemaDefinition;
 	public final fun getSubscriptionTypeDefinition ()Lcom/apollographql/apollo/ast/GQLTypeDefinition;
 	public final fun getTypeDefinitions ()Ljava/util/Map;
 	public final fun hasTypeWithTypePolicy ()Z
 	public final fun implementedTypes (Ljava/lang/String;)Ljava/util/Set;
 	public final fun isTypeASubTypeOf (Ljava/lang/String;Ljava/lang/String;)Z
 	public final fun isTypeASuperTypeOf (Ljava/lang/String;Ljava/lang/String;)Z
+	public final fun keyFields (Ljava/lang/String;)Ljava/util/Set;
 	public final fun originalDirectiveName (Ljava/lang/String;)Ljava/lang/String;
 	public final fun originalTypeName (Ljava/lang/String;)Ljava/lang/String;
 	public final fun possibleTypes (Lcom/apollographql/apollo/ast/GQLTypeDefinition;)Ljava/util/Set;
 	public final fun possibleTypes (Ljava/lang/String;)Ljava/util/Set;
 	public final fun rootTypeNameFor (Ljava/lang/String;)Ljava/lang/String;
 	public final fun rootTypeNameOrNullFor (Ljava/lang/String;)Ljava/lang/String;
-	public final fun superTypes (Lcom/apollographql/apollo/ast/GQLObjectTypeDefinition;)Ljava/util/Set;
+	public final fun shouldStrip (Ljava/lang/String;)Z
+	public final fun superTypes (Lcom/apollographql/apollo/ast/GQLTypeDefinition;)Ljava/util/Set;
 	public final fun toGQLDocument ()Lcom/apollographql/apollo/ast/GQLDocument;
+	public final fun toMap ()Ljava/util/Map;
 	public final fun typeDefinition (Ljava/lang/String;)Lcom/apollographql/apollo/ast/GQLTypeDefinition;
 }
 
 public final class com/apollographql/apollo/ast/Schema$Companion {
+	public final fun fromMap (Ljava/util/Map;)Lcom/apollographql/apollo/ast/Schema;
 }
 
 public final class com/apollographql/apollo/ast/SchemaValidationException : com/apollographql/apollo/ast/SourceAwareException {
@@ -983,18 +1115,19 @@ public final class com/apollographql/apollo/ast/SourceLocation {
 	public final fun getEnd ()I
 	public final fun getFilePath ()Ljava/lang/String;
 	public final fun getLine ()I
-	public final fun getPosition ()I
 	public final fun getStart ()I
 	public final fun pretty ()Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/apollographql/apollo/ast/SourceLocation$Companion {
-	public final fun getUNKNOWN ()Lcom/apollographql/apollo/ast/SourceLocation;
 }
 
 public final class com/apollographql/apollo/ast/SourceLocationKt {
 	public static final fun pretty (Lcom/apollographql/apollo/ast/SourceLocation;)Ljava/lang/String;
+}
+
+public abstract interface class com/apollographql/apollo/ast/TransformResult {
 }
 
 public final class com/apollographql/apollo/ast/TransformResult$Continue : com/apollographql/apollo/ast/TransformResult {
@@ -1048,14 +1181,29 @@ public final class com/apollographql/apollo/ast/VariableUsage {
 	public final fun isOneOfInputField ()Z
 }
 
+public final class com/apollographql/apollo/ast/internal/SchemaValidationOptions {
+	public fun <init> (ZLjava/util/List;)V
+	public final fun getAddKotlinLabsDefinitions ()Z
+	public final fun getForeignSchemas ()Ljava/util/List;
+}
+
+public final class com/apollographql/apollo/ast/internal/SchemaValidationScopeKt {
+	public static final fun toConnectionFields (Ljava/util/List;)Ljava/util/List;
+	public static final fun toEmbeddedFields (Ljava/util/List;)Ljava/util/List;
+}
+
 public final class com/apollographql/apollo/ast/introspection/ApolloIntrospectionSchema {
 }
 
 public final class com/apollographql/apollo/ast/introspection/Introspection {
+	public static final fun normalize (Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
 	public static final fun toGQLDocument (Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;)Lcom/apollographql/apollo/ast/GQLDocument;
 	public static final fun toIntrospectionSchema (Lcom/apollographql/apollo/ast/GQLDocument;)Lcom/apollographql/apollo/ast/introspection/ApolloIntrospectionSchema;
 	public static final fun toIntrospectionSchema (Ljava/io/File;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
 	public static final fun toIntrospectionSchema (Ljava/lang/String;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
+	public static final fun toIntrospectionSchema (Lokio/BufferedSource;Ljava/lang/String;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
+	public static final fun toIntrospectionSchema (Lokio/Path;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
+	public static synthetic fun toIntrospectionSchema$default (Lokio/BufferedSource;Ljava/lang/String;ILjava/lang/Object;)Lcom/apollographql/apollo/ast/introspection/IntrospectionSchema;
 	public static final fun toJson (Lcom/apollographql/apollo/ast/introspection/ApolloIntrospectionSchema;)Ljava/lang/String;
 	public static final fun writeTo (Lcom/apollographql/apollo/ast/introspection/ApolloIntrospectionSchema;Ljava/io/File;)V
 }

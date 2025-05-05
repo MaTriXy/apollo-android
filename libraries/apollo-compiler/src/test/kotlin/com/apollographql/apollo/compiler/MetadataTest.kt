@@ -35,7 +35,7 @@ class MetadataTest {
 
 
   private fun compileRoot(directory: String) {
-    buildCodegenSchemaOptions().writeTo(codegenSchemaOptionsFile)
+    CodegenSchemaOptions().writeTo(codegenSchemaOptionsFile)
     buildIrOptions().writeTo(irOptionsFile)
     buildCodegenOptions(packageName = rootPackageName).writeTo(rootCodegenOptionsFile)
     buildCodegenOptions(packageName = leafPackageName).writeTo(leafCodegenOptionsFile)
@@ -45,6 +45,7 @@ class MetadataTest {
         logger = null,
         codegenSchemaOptions = codegenSchemaOptionsFile.toCodegenSchemaOptions(),
         foreignSchemas = emptyList(),
+        null
     ).writeTo(codegenSchemaFile)
 
     ApolloCompiler.buildIrOperations(
@@ -75,7 +76,7 @@ class MetadataTest {
         codegenOptions = rootCodegenOptionsFile.toCodegenOptions(),
         layout = null,
         operationManifestFile = null,
-        operationOutputGenerator = null,
+        operationIdsGenerator = null,
         irOperationsTransform = null,
         javaOutputTransform = null,
         kotlinOutputTransform = null,
@@ -89,7 +90,7 @@ class MetadataTest {
         codegenOptions = leafCodegenOptionsFile.toCodegenOptions(),
         layout = null,
         operationManifestFile = null,
-        operationOutputGenerator = null,
+        operationIdsGenerator = null,
         irOperationsTransform = null,
         javaOutputTransform = null,
         kotlinOutputTransform = null,

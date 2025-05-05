@@ -71,7 +71,7 @@ internal class ExecutableValidationScope(
   private val fragmentVariableUsages = mutableMapOf<String, List<VariableUsage>>()
   private val cyclicFragments = mutableSetOf<String>()
   private val usedFragments = mutableSetOf<String>()
-  private val hasCatchByDefault = schema.directiveDefinitions.any { schema.originalTypeName(it.key) == Schema.CATCH_BY_DEFAULT }
+  private val hasCatchByDefault = schema.directiveDefinitions.any { schema.originalDirectiveName(it.key) == Schema.CATCH_BY_DEFAULT }
 
   /**
    * These are scoped to the current operation/fragment being validated
@@ -437,6 +437,13 @@ internal class ExecutableValidationScope(
     }
     validateDirectives(directives, this) {
       variableUsages.add(it)
+    }
+    variableDefinitions.forEach {
+      if (it.defaultValue != null) {
+        validateAndCoerceValue(it.defaultValue, it.type, false, false) {
+          issues.add(it.constContextError())
+        }
+      }
     }
   }
 
@@ -866,11 +873,3 @@ internal fun <T> MutableMap<String, T>.putIfAbsentMpp(key: String, value: T): T?
   }
 }
 
-internal fun <T> Map<String, T>.getOrDefaultMpp(key: String, defaultValue: T): T {
-  val existing = get(key)
-  if (existing == null) {
-    return defaultValue
-  } else {
-    return existing
-  }
-}

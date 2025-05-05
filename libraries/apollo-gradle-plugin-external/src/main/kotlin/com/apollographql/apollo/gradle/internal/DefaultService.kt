@@ -17,8 +17,7 @@ import org.gradle.api.file.RegularFileProperty
 import java.io.File
 import javax.inject.Inject
 
-abstract class DefaultService @Inject constructor(val project: Project, override val name: String)
-  : Service {
+abstract class DefaultService @Inject constructor(val project: Project, override val name: String) : Service {
 
   internal val upstreamDependencies = mutableListOf<Dependency>()
   internal val downstreamDependencies = mutableListOf<Dependency>()
@@ -45,14 +44,6 @@ abstract class DefaultService @Inject constructor(val project: Project, override
   override fun srcDir(directory: Any) {
     graphqlSourceDirectorySet.srcDir(directory)
   }
-
-  @Deprecated("Not supported any more, use dependsOn() instead", level = DeprecationLevel.ERROR)
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  override fun usedCoordinates(file: File) = TODO()
-
-  @Deprecated("Not supported any more, use dependsOn() instead", level = DeprecationLevel.ERROR)
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  override fun usedCoordinates(file: String) = TODO()
 
   var introspection: DefaultIntrospection? = null
 
@@ -122,7 +113,7 @@ abstract class DefaultService @Inject constructor(val project: Project, override
   var operationManifestAction: Action<in Service.OperationManifestConnection>? = null
   var outgoingVariantsConnection: Action<in Service.OutgoingVariantsConnection>? = null
 
-  @Deprecated("Use operationManifestConnection", replaceWith = ReplaceWith("operationManifestConnection"))
+  @Deprecated("Use operationManifestConnection", replaceWith = ReplaceWith("operationManifestConnection"), level = DeprecationLevel.ERROR)
   @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
   override fun operationOutputConnection(action: Action<in Service.OperationOutputConnection>) {
     check(!registered) {
@@ -150,6 +141,8 @@ abstract class DefaultService @Inject constructor(val project: Project, override
 
   var outputDirAction: Action<in Service.DirectoryConnection>? = null
 
+  var dataBuildersOutputDirAction: Action<in Service.DirectoryConnection>? = null
+
   override fun outputDirConnection(action: Action<in Service.DirectoryConnection>) {
     check(!registered) {
       "Apollo: outputDirConnection {} cannot be configured outside of a service {} block"
@@ -158,12 +151,20 @@ abstract class DefaultService @Inject constructor(val project: Project, override
     this.outputDirAction = action
   }
 
+  override fun dataBuildersOutputDirConnection(action: Action<in Service.DirectoryConnection>) {
+    check(!registered) {
+      "Apollo: dataBuildersOutputDirConnection {} cannot be configured outside of a service {} block"
+    }
+
+    this.dataBuildersOutputDirAction = action
+  }
+
   override fun packageNamesFromFilePaths(rootPackageName: String?) {
     this.rootPackageName = rootPackageName ?: ""
   }
 
-  val scalarTypeMapping = mutableMapOf<String, String>()
-  val scalarAdapterMapping = mutableMapOf<String, String>()
+  internal val scalarTypeMapping = mutableMapOf<String, String>()
+  internal val scalarAdapterMapping = mutableMapOf<String, String>()
 
   override fun mapScalar(
       graphQLName: String,
@@ -197,7 +198,8 @@ abstract class DefaultService @Inject constructor(val project: Project, override
   override fun mapScalarToJavaBoolean(graphQLName: String) = mapScalar(graphQLName, "java.lang.Boolean", "com.apollographql.apollo.api.Adapters.BooleanAdapter")
   override fun mapScalarToJavaObject(graphQLName: String) = mapScalar(graphQLName, "java.lang.Object", "com.apollographql.apollo.api.Adapters.AnyAdapter")
 
-  override fun mapScalarToUpload(graphQLName: String) = mapScalar(graphQLName, "com.apollographql.apollo.api.Upload", "com.apollographql.apollo.api.UploadAdapter")
+  override fun mapScalarToUpload(graphQLName: String) =
+    mapScalar(graphQLName, "com.apollographql.apollo.api.Upload", "com.apollographql.apollo.api.UploadAdapter")
 
   override fun dependsOn(dependencyNotation: Any) {
     dependsOn(dependencyNotation, false)
@@ -226,7 +228,9 @@ abstract class DefaultService @Inject constructor(val project: Project, override
     downstreamDependencies.add(project.dependencies.create(dependencyNotation))
   }
 
-  internal fun isMultiModule(): Boolean = generateApolloMetadata.getOrElse(false) || downstreamDependencies.isNotEmpty() || upstreamDependencies.isNotEmpty()
+  internal fun isMultiModule(): Boolean =
+    generateApolloMetadata.getOrElse(false) || downstreamDependencies.isNotEmpty() || upstreamDependencies.isNotEmpty()
+
   internal fun isSchemaModule(): Boolean = upstreamDependencies.isEmpty()
 
   override fun plugin(dependencyNotation: Any) {
@@ -234,7 +238,7 @@ abstract class DefaultService @Inject constructor(val project: Project, override
   }
 
   override fun plugin(dependencyNotation: Any, block: Action<CompilerPlugin>) {
-    require (compilerPlugin == null) {
+    require(compilerPlugin == null) {
       "Apollo: only one Apollo Compiler Plugin is allowed."
     }
     compilerPlugin = DefaultCompilerPlugin()

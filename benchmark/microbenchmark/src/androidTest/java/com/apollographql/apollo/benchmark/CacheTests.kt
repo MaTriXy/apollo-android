@@ -2,23 +2,19 @@ package com.apollographql.apollo.benchmark
 
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
-import com.apollographql.apollo.api.CustomScalarAdapters
 import com.apollographql.apollo.api.Query
 import com.apollographql.apollo.api.json.jsonReader
 import com.apollographql.apollo.api.parseJsonResponse
 import com.apollographql.apollo.benchmark.Utils.dbFile
 import com.apollographql.apollo.benchmark.Utils.dbName
+import com.apollographql.apollo.benchmark.Utils.largeListQuery
 import com.apollographql.apollo.benchmark.Utils.operationBasedQuery
 import com.apollographql.apollo.benchmark.Utils.registerCacheSize
 import com.apollographql.apollo.benchmark.Utils.resource
 import com.apollographql.apollo.benchmark.Utils.responseBasedQuery
 import com.apollographql.apollo.benchmark.test.R
-import com.apollographql.apollo.cache.normalized.api.CacheHeaders
-import com.apollographql.apollo.cache.normalized.api.FieldPolicyCacheResolver
+import com.apollographql.apollo.cache.normalized.ApolloStore
 import com.apollographql.apollo.cache.normalized.api.MemoryCacheFactory
-import com.apollographql.apollo.cache.normalized.api.TypePolicyCacheKeyGenerator
-import com.apollographql.apollo.cache.normalized.api.normalize
-import com.apollographql.apollo.cache.normalized.api.readDataFromCache
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -30,41 +26,47 @@ class CacheTests {
 
   @Test
   fun cacheOperationMemory() {
-    readFromCache("cacheOperationMemory", operationBasedQuery, sql = false, Utils::checkOperationBased)
+    readFromCache("cacheOperationMemory", operationBasedQuery, R.raw.calendar_response, sql = false, Utils::checkOperationBased)
   }
 
   @Test
   fun cacheOperationSql() {
-    readFromCache("cacheOperationSql", operationBasedQuery, sql = true, Utils::checkOperationBased)
+    readFromCache("cacheOperationSql", operationBasedQuery, R.raw.calendar_response, sql = true, Utils::checkOperationBased)
   }
 
   @Test
   fun cacheResponseMemory() {
-    readFromCache("cacheResponseMemory", responseBasedQuery, sql = false, Utils::checkResponseBased)
+    readFromCache("cacheResponseMemory", responseBasedQuery, R.raw.calendar_response, sql = false, Utils::checkResponseBased)
   }
 
   @Test
   fun cacheResponseSql() {
-    readFromCache("cacheResponseSql", responseBasedQuery, sql = true, Utils::checkResponseBased)
+    readFromCache("cacheResponseSql", responseBasedQuery, R.raw.calendar_response, sql = true, Utils::checkResponseBased)
   }
 
-  private fun <D : Query.Data> readFromCache(testName: String, query: Query<D>, sql: Boolean, check: (D) -> Unit) {
-    val cache = if (sql) {
-      dbFile.delete()
-      SqlNormalizedCacheFactory(dbName).create()
-    } else {
-      MemoryCacheFactory().create()
-    }
+  @Test
+  fun cacheLargeListMemory() {
+    readFromCache("cacheLargeListMemory", largeListQuery, R.raw.tracks_playlist_response, sql = false, Utils::checkLargeList)
+  }
 
-    val data = query.parseJsonResponse(resource(R.raw.calendar_response).jsonReader()).data!!
-    val records = query.normalize(
-        data = data,
-        customScalarAdapters = CustomScalarAdapters.Empty,
-        cacheKeyGenerator = TypePolicyCacheKeyGenerator,
+  @Test
+  fun cacheLargeListSql() {
+    readFromCache("cacheLargeListSql", largeListQuery, R.raw.tracks_playlist_response, sql = true, Utils::checkLargeList)
+  }
+
+  private fun <D : Query.Data> readFromCache(testName: String, query: Query<D>, jsonResponseResId: Int, sql: Boolean, check: (D) -> Unit) {
+    val store = ApolloStore(
+        if (sql) {
+          dbFile.delete()
+          SqlNormalizedCacheFactory(name = dbName)
+        } else {
+          MemoryCacheFactory()
+        }
     )
 
+    val data = query.parseJsonResponse(resource(jsonResponseResId).jsonReader()).data!!
     runBlocking {
-      cache.merge(records.values.toList(), CacheHeaders.NONE)
+      store.writeOperation(query, data)
     }
 
     if (sql) {
@@ -72,12 +74,7 @@ class CacheTests {
     }
 
     benchmarkRule.measureRepeated {
-      val data2 = query.readDataFromCache(
-          CustomScalarAdapters.Empty,
-          cache,
-          FieldPolicyCacheResolver,
-          CacheHeaders.NONE
-      )
+      val data2 = store.readOperation(query)
       check(data2)
     }
   }

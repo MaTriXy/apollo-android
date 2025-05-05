@@ -6,9 +6,6 @@ import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension
-import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootPlugin
-import org.jetbrains.kotlin.gradle.targets.js.npm.tasks.KotlinNpmInstallTask
 
 class AndroidOptions(
     val withCompose: Boolean,
@@ -37,25 +34,29 @@ fun Project.apolloLibrary(
     configureAndroid(namespace, androidOptions)
   }
   commonSetup()
-  configureJavaAndKotlinCompilers(jvmTarget, kotlinCompilerOptions)
 
-  addOptIn(
-      "com.apollographql.apollo.annotations.ApolloExperimental",
-      "com.apollographql.apollo.annotations.ApolloInternal"
+  configureJavaAndKotlinCompilers(
+      jvmTarget,
+      kotlinCompilerOptions,
+      listOf(
+          "kotlin.RequiresOptIn",
+          "com.apollographql.apollo.annotations.ApolloInternal",
+          "com.apollographql.apollo.annotations.ApolloExperimental"
+      )
   )
 
   if (publish) {
     configurePublishing()
   }
 
-  // Within the 'tests' project (a composite build), dependencies are automatically substituted to use the project's one.
-  // But we don't want this, for example apollo-tooling depends on a published version of apollo-api.
-  // So disable this behavior (see https://docs.gradle.org/current/userguide/composite_builds.html#deactivate_included_build_substitutions).
   configurations.configureEach {
-    if (name != "apolloPublished") {
-      return@configureEach
+    if (name == "apolloPublished" || name.matches(Regex("apollo.*Compiler"))) {
+      // Within the 'tests' project (a composite build), dependencies are automatically substituted to use the project's one.
+      // apollo-tooling depends on a published version of apollo-api which should not be substituted for both the runtime
+      // and compiler classpaths.
+      // See (see https://docs.gradle.org/current/userguide/composite_builds.html#deactivate_included_build_substitutions).
+      this.resolutionStrategy.useGlobalDependencySubstitutionRules.set(false)
     }
-    resolutionStrategy.useGlobalDependencySubstitutionRules.set(false)
   }
 
   if (extensions.findByName("kotlin") is KotlinMultiplatformExtension) {
@@ -103,10 +104,14 @@ fun Project.apolloTest(
     kotlinCompilerOptions: KotlinCompilerOptions = KotlinCompilerOptions(),
 ) {
   commonSetup()
-  configureJavaAndKotlinCompilers(null, kotlinCompilerOptions)
-  addOptIn(
-      "com.apollographql.apollo.annotations.ApolloExperimental",
-      "com.apollographql.apollo.annotations.ApolloInternal",
+  configureJavaAndKotlinCompilers(
+      null,
+      kotlinCompilerOptions,
+      listOf(
+          "kotlin.RequiresOptIn",
+          "com.apollographql.apollo.annotations.ApolloExperimental",
+          "com.apollographql.apollo.annotations.ApolloInternal"
+      )
   )
 
   if (extensions.findByName("kotlin") is KotlinMultiplatformExtension) {

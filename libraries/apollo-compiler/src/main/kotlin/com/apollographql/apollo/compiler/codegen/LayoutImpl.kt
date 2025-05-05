@@ -4,7 +4,7 @@ package com.apollographql.apollo.compiler.codegen
 
 import com.apollographql.apollo.annotations.ApolloInternal
 import com.apollographql.apollo.compiler.CodegenSchema
-import com.apollographql.apollo.compiler.PackageNameGenerator
+import com.apollographql.apollo.compiler.PackageNameFactory
 import com.apollographql.apollo.compiler.allTypes
 import com.apollographql.apollo.compiler.capitalizeFirstLetter
 import com.apollographql.apollo.compiler.decapitalizeFirstLetter
@@ -14,7 +14,7 @@ import com.apollographql.apollo.compiler.defaultUseSemanticNaming
 import com.apollographql.apollo.compiler.internal.singularize
 import com.apollographql.apollo.compiler.ir.IrFieldInfo
 import com.apollographql.apollo.compiler.ir.IrListType
-import com.apollographql.apollo.compiler.ir.IrOperation
+import com.apollographql.apollo.compiler.ir.IrOperationDefinition
 import com.apollographql.apollo.compiler.ir.IrType
 import com.apollographql.apollo.compiler.ir.TypeSet
 import com.apollographql.apollo.compiler.maybeAddSuffix
@@ -29,7 +29,7 @@ import com.apollographql.apollo.compiler.withUnderscorePrefix
  */
 internal class LayoutImpl(
     codegenSchema: CodegenSchema,
-    private val packageNameGenerator: PackageNameGenerator,
+    private val packageNameFactory: PackageNameFactory,
     useSemanticNaming: Boolean?,
     decapitalizeFields: Boolean?,
     generatedSchemaName: String?
@@ -46,9 +46,11 @@ internal class LayoutImpl(
     /**
      * Make it possible to support several types with different cases. Example:
      *
+     * ```graphql
      * type URL @targetName(newName: "Url1")
      * type Url
      * type url
+     * ```
      *
      * Because we capitalize the first letter, we need to escape the name because else `Url` and `url` clash
      */
@@ -69,7 +71,7 @@ internal class LayoutImpl(
 
   override fun schemaPackageName(): String = schemaPackageName
 
-  override fun executableDocumentPackageName(filePath: String?): String = packageNameGenerator.packageName(filePath ?: "")
+  override fun executableDocumentPackageName(filePath: String?): String = packageNameFactory.packageName(filePath ?: "")
 
   override fun schemaTypeName(schemaTypeName: String): String {
     return schemaTypeToClassName[schemaTypeName]?.let {
@@ -151,15 +153,17 @@ internal fun modelName(info: IrFieldInfo): String {
 
 
 internal fun SchemaLayout.typePackageName() = "${schemaPackageName()}.type"
-internal fun SchemaLayout.typeBuilderPackageName() = "${schemaPackageName()}.type.builder"
+internal fun SchemaLayout.builderPackageName() = "${schemaPackageName()}.builder"
+internal fun SchemaLayout.builderResolverPackageName() = "${schemaPackageName()}.builder.resolver"
 internal fun SchemaLayout.typeAdapterPackageName() = "${schemaPackageName()}.type.adapter"
 internal fun SchemaLayout.typeUtilPackageName() = "${schemaPackageName()}.type.util"
+internal fun SchemaLayout.typeScalarPackageName() = "${schemaPackageName()}.type.scalar"
 
 internal fun SchemaLayout.paginationPackageName() = "${schemaPackageName()}.pagination"
 internal fun SchemaLayout.schemaSubPackageName() = "${schemaPackageName()}.schema"
 
-internal fun SchemaLayout.javaOptionalAdapterClassName() = "OptionalAdapter"
-internal fun SchemaLayout.javaOptionalAdaptersClassName() = "OptionalAdapters"
+internal fun javaOptionalAdapterClassName() = "OptionalAdapter"
+internal fun javaOptionalAdaptersClassName() = "OptionalAdapters"
 
 internal fun OperationsLayout.operationAdapterPackageName(filePath: String) = "${executableDocumentPackageName(filePath)}.adapter"
 internal fun OperationsLayout.operationResponseFieldsPackageName(filePath: String) = "${executableDocumentPackageName(filePath)}.selections"
@@ -168,7 +172,7 @@ internal fun OperationsLayout.fragmentPackageName(filePath: String) = "${executa
 internal fun OperationsLayout.fragmentAdapterPackageName(filePath: String) = "${executableDocumentPackageName(filePath)}.fragment.adapter"
 internal fun OperationsLayout.fragmentResponseFieldsPackageName(filePath: String) = "${executableDocumentPackageName(filePath)}.fragment.selections"
 
-internal fun OperationsLayout.operationName(operation: IrOperation) = operationName(operation.name, operation.operationType.name)
+internal fun OperationsLayout.operationName(operation: IrOperationDefinition) = operationName(operation.name, operation.operationType.name)
 
 internal fun String.responseAdapter(): String = "${this}_ResponseAdapter"
 internal fun String.inputAdapter(): String = "${this}_InputAdapter"
@@ -188,22 +192,11 @@ fun SchemaAndOperationsLayout(
     decapitalizeFields: Boolean?,
     generatedSchemaName: String?,
 ): SchemaAndOperationsLayout {
-  val packageNameGenerator = when {
-    packageName != null -> PackageNameGenerator.Flat(packageName)
-    rootPackageName != null -> PackageNameGenerator.NormalizedPathAware(rootPackageName)
+  val packageNameFactory = when {
+    packageName != null -> PackageNameFactory.Flat(packageName)
+    rootPackageName != null -> PackageNameFactory.NormalizedPathAware(rootPackageName)
     else -> error("One of packageName or rootPackageName is required")
   }
-  return LayoutImpl(codegenSchema, packageNameGenerator, useSemanticNaming, decapitalizeFields, generatedSchemaName)
-}
-
-@ApolloInternal
-fun SchemaAndOperationsLayout(
-    codegenSchema: CodegenSchema,
-    packageNameGenerator: PackageNameGenerator,
-    useSemanticNaming: Boolean?,
-    decapitalizeFields: Boolean?,
-    generatedSchemaName: String?,
-): SchemaAndOperationsLayout {
-  return LayoutImpl(codegenSchema, packageNameGenerator, useSemanticNaming, decapitalizeFields, generatedSchemaName )
+  return LayoutImpl(codegenSchema, packageNameFactory, useSemanticNaming, decapitalizeFields, generatedSchemaName)
 }
 

@@ -2,8 +2,13 @@ package com.apollographql.apollo.compiler
 
 import com.apollographql.apollo.annotations.ApolloDeprecatedSince
 import com.apollographql.apollo.annotations.ApolloExperimental
+import com.apollographql.apollo.compiler.operationoutput.OperationDescriptor
+import com.apollographql.apollo.compiler.operationoutput.OperationId
+import com.apollographql.apollo.compiler.operationoutput.OperationOutput
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
 
 const val MODELS_RESPONSE_BASED = "responseBased"
 const val MODELS_OPERATION_BASED = "operationBased"
@@ -14,7 +19,7 @@ const val ADD_TYPENAME_IF_POLYMORPHIC = "ifPolymorphic"
 const val ADD_TYPENAME_IF_ABSTRACT = "ifAbstract"
 const val ADD_TYPENAME_ALWAYS = "always"
 
-@Deprecated("Use $MANIFEST_PERSISTED_QUERY instead")
+@Deprecated("Use $MANIFEST_PERSISTED_QUERY instead", level = DeprecationLevel.ERROR)
 @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_1)
 const val MANIFEST_OPERATION_OUTPUT = "operationOutput"
 const val MANIFEST_PERSISTED_QUERY = "persistedQueryManifest"
@@ -27,7 +32,7 @@ enum class TargetLanguage {
   /**
    * Base language version.
    */
-  @Deprecated("Use KOTLIN_1_9 instead" , ReplaceWith("KOTLIN_1_9"))
+  @Deprecated("Use KOTLIN_1_9 instead", ReplaceWith("KOTLIN_1_9"), level = DeprecationLevel.ERROR)
   @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_2)
   KOTLIN_1_5,
 
@@ -133,19 +138,15 @@ enum class GeneratedMethod {
   }
 }
 
+
 @Serializable
 class CodegenSchemaOptions(
-    val scalarMapping: Map<String, ScalarInfo>,
-    val generateDataBuilders: Boolean?,
-)
-
-fun buildCodegenSchemaOptions(
-    scalarMapping: Map<String, ScalarInfo> = emptyMap(),
-    generateDataBuilders: Boolean? = null,
-) = CodegenSchemaOptions(
-    scalarMapping = scalarMapping,
-    generateDataBuilders = generateDataBuilders,
-)
+    val scalarTypeMapping: Map<String, String>,
+    val scalarAdapterMapping: Map<String, String>,
+    val generateDataBuilders: Boolean,
+) {
+  constructor(): this(emptyMap(), emptyMap(), false)
+}
 
 @Serializable
 class IrOptions(
@@ -244,6 +245,7 @@ interface CommonCodegenOpt {
    * Default: false
    */
   val decapitalizeFields: Boolean?
+
   /**
    * When true, the operation class names are suffixed with their operation type like ('Query', 'Mutation' ot 'Subscription').
    * For an example, `query getDroid { ... }` GraphQL query generates the 'GetDroidQuery' class.
@@ -251,6 +253,7 @@ interface CommonCodegenOpt {
    * Default value: true
    */
   val useSemanticNaming: Boolean?
+
   /**
    * Specifies which methods will be auto generated on operations, models, fragments and input objects.
    *
@@ -270,7 +273,7 @@ interface CommonCodegenOpt {
   /**
    * The format to output for the operation manifest. Valid values are:
    *
-   * - "operationOutput": a manifest that matches the format used by [OperationOutputGenerator]
+   * - "operationOutput": a manifest that matches the format used by [OperationOutput]
    * - "persistedQueryManifest": a manifest format for an upcoming GraphOS feature
    * - nothing (Default): by default no manifest is generated
    *
@@ -332,6 +335,7 @@ interface SchemaCodegenOpt {
    * Default: false
    */
   val generateSchema: Boolean?
+
   /**
    * Class name to use when generating the Schema class.
    *
@@ -435,10 +439,12 @@ interface KotlinCodegenOpt {
    * on servers
    */
   val addUnknownForEnums: Boolean?
+
   /**
    * Whether to add default arguments for input objects.
    */
   val addDefaultArgumentForInputObjects: Boolean?
+
   /**
    * Kotlin native generates [Any?] for optional types
    * Setting generateFilterNotNull generates extra `filterNotNull` functions that help keep the type information.
@@ -487,10 +493,10 @@ interface KotlinCodegenOpt {
   val jsExport: Boolean?
 }
 
-interface JavaOperationsCodegenOptions: CommonCodegenOpt, OperationsCodegenOpt, JavaCodegenOpt
-interface KotlinOperationsCodegenOptions: CommonCodegenOpt, OperationsCodegenOpt, KotlinCodegenOpt
-interface JavaSchemaCodegenOptions: CommonCodegenOpt, SchemaCodegenOpt, JavaCodegenOpt
-interface KotlinSchemaCodegenOptions: CommonCodegenOpt, SchemaCodegenOpt, KotlinCodegenOpt
+interface JavaOperationsCodegenOptions : CommonCodegenOpt, OperationsCodegenOpt, JavaCodegenOpt
+interface KotlinOperationsCodegenOptions : CommonCodegenOpt, OperationsCodegenOpt, KotlinCodegenOpt
+interface JavaSchemaCodegenOptions : CommonCodegenOpt, SchemaCodegenOpt, JavaCodegenOpt
+interface KotlinSchemaCodegenOptions : CommonCodegenOpt, SchemaCodegenOpt, KotlinCodegenOpt
 
 interface SchemaCodegenOptions : JavaSchemaCodegenOptions, KotlinSchemaCodegenOptions
 interface OperationsCodegenOptions : JavaOperationsCodegenOptions, KotlinOperationsCodegenOptions
@@ -521,7 +527,7 @@ class CodegenOptions(
     override val nullableFieldStyle: JavaNullable?,
     override val generateFragmentImplementations: Boolean?,
     override val generateQueryDocument: Boolean?,
-): SchemaCodegenOptions, OperationsCodegenOptions
+) : SchemaCodegenOptions, OperationsCodegenOptions
 
 fun buildCodegenOptions(
     targetLanguage: TargetLanguage? = null,
@@ -636,21 +642,28 @@ class ExpressionAdapterInitializer(val expression: String) : AdapterInitializer
 @SerialName("runtime")
 object RuntimeAdapterInitializer : AdapterInitializer
 
-@Serializable
-class ScalarInfo(
-    val targetName: String,
-    val adapterInitializer: AdapterInitializer = RuntimeAdapterInitializer,
-    val userDefined: Boolean = true,
-)
-
 private val NoOpLogger = object : ApolloCompiler.Logger {
   override fun warning(message: String) {
   }
 }
 
 internal val defaultAlwaysGenerateTypesMatching = emptySet<String>()
-@Suppress("DEPRECATION")
-internal val defaultOperationOutputGenerator = OperationOutputGenerator.Default(OperationIdGenerator.Sha256)
+
+internal val defaultOperationOutputGenerator = object : OperationIdsGenerator {
+  private fun String.sha256(): String {
+    val bytes = toByteArray(charset = StandardCharsets.UTF_8)
+    val md = MessageDigest.getInstance("SHA-256")
+    val digest = md.digest(bytes)
+    return digest.fold("") { str, it -> str + "%02x".format(it) }
+  }
+
+  override fun generate(operationDescriptorList: Collection<OperationDescriptor>): List<OperationId> {
+    return operationDescriptorList.map {
+      OperationId(it.source.sha256(), it.name)
+    }
+  }
+}
+
 internal val defaultLogger = NoOpLogger
 internal const val defaultUseSemanticNaming = true
 internal const val defaultWarnOnDeprecatedUsages = true

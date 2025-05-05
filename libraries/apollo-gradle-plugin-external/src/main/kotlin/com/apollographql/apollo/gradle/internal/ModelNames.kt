@@ -18,6 +18,7 @@ internal object ModelNames {
   // Task names
   fun generateApolloSources() = "generateApolloSources"
   fun generateApolloSources(service: Service) = camelCase("generate", service.name, "ApolloSources")
+  fun generateDataBuildersApolloSources(service: Service) = camelCase("generate", service.name, "DataBuildersApolloSources")
   fun generateApolloCodegenSchema(service: Service) = camelCase("generate", service.name, "ApolloCodegenSchema")
   fun generateApolloIrOperations(service: Service) = camelCase("generate", service.name, "ApolloIrOperations")
   fun generateApolloOptions(service: Service) = camelCase("generate", service.name, "ApolloOptions")
@@ -29,33 +30,39 @@ internal object ModelNames {
   fun checkApolloVersions() = "checkApolloVersions"
   fun convertApolloSchema() = "convertApolloSchema"
 
-  // Configuration names
-  @Deprecated("Unused. Use dependsOn() instead.")
-  @ApolloDeprecatedSince(ApolloDeprecatedSince.Version.v4_0_0)
-  fun metadataConfiguration() = "apolloMetadata"
-  fun configuration(serviceName: String, apolloDirection: ApolloDirection, apolloUsage: ApolloUsage, configurationKind: ConfigurationKind): String {
+  fun scopeConfiguration(
+      serviceName: String,
+      apolloDirection: ApolloDirection,
+  ): String {
+    return camelCase(
+        "apollo",
+        serviceName,
+        apolloDirection.pretty(),
+    )
+  }
+
+  fun configuration(
+      serviceName: String,
+      apolloDirection: ApolloDirection,
+      apolloUsage: ApolloUsage,
+      configurationKind: ConfigurationKind,
+  ): String {
     return camelCase(
         "apollo",
         serviceName,
         apolloDirection.pretty(),
         apolloUsage.name,
-        configurationKind.pretty()
+        configurationKind.name
     )
   }
-  fun compilerConfiguration(service: Service) = camelCase("apollo", service.name, "Compiler")
- }
 
-private fun ConfigurationKind.pretty(): String {
-  return when(this) {
-    ConfigurationKind.DependencyScope -> ""
-    else -> name
-  }
+  fun compilerConfiguration(service: Service) = camelCase("apollo", service.name, "Compiler")
 }
 
 
 private fun ApolloDirection.pretty(): String {
-  return when(this) {
+  return when (this) {
     ApolloDirection.Upstream -> ""
-    ApolloDirection.Downstream -> name
+    ApolloDirection.Downstream -> "UsedCoordinates"
   }
 }

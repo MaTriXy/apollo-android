@@ -1,5 +1,7 @@
 package com.apollographql.apollo.ast.internal
 
+import com.apollographql.apollo.annotations.ApolloInternal
+
 /**
  * This file contains several groups of GraphQL definitions we use during codegen:
  *
@@ -174,16 +176,85 @@ on OBJECT
     | UNION
     | SCALAR
     | INPUT_OBJECT
+""".trimIndent()
+/**
+ * These definitions are publicly part of `kotlin_labs` but to avoid conflicting with user imports
+ * they are imported under a different foreign schema name by the Apollo compiler.
+ *
+ * Ideally, we move all configuration to `.graphqls` files and we can remove that.
+ */
+internal val compilerOptions_0_0 = """
+""${'"'}
+Configure the Apollo compiler to map the given scalar to the given class.
+""${'"'}
+directive @map(
+  ""${'"'}
+  The fully qualified type name to map the scalar to. 
+  Simple generic types without variance or wildcards are also supported. 
+  
+  Examples: 
+    - `java.util.Date`
+    - `kotlin.collections.Map<kotlin.String, java.util.Date>`
+  ""${'"'}
+  to: String!, 
 
+  ""${'"'}
+  A fully qualified expression referencing the adapter used to adapt to/from the type
+  or inline property type, or `null` to specify the adapter at runtime.
+   
+  Examples:
+    - `com.apollographql.adapter.datetime.KotlinxInstantAdapter`
+    - `com.example.MyAdapter()`
+  ""${'"'}
+  with: String = null, 
+  
+  ""${'"'}
+  If non null, contains the name of the property used to wrap/unwrap the inline class.
+  [to] must be an inline class.
+  
+  Only used in Kotlin codegen.
+  ""${'"'}  
+  inlineProperty: String = null
+) on SCALAR
+
+""${'"'}
+Built-in types known at compile time. Apollo Kotlin knows the adapters for those types.
+""${'"'}
+enum BuiltIn { String, Boolean, Int, Long, Float, Double }
+
+""${'"'}
+Use the given builtin type for this scalar.
+""${'"'}
+directive @mapTo(
+  ""${'"'}
+  The built-in type to use for this scalar.
+  ""${'"'}
+  builtIn: BuiltIn!, 
+  ""${'"'}
+  Whether to generate a wrapper inline class for this scalar.
+  ""${'"'}
+  inline: Boolean! = true
+) on SCALAR
+"""
+
+
+internal val compilerOptions_0_1_additions = """
+  ""${'"'}
+  Tells the Apollo compiler to generate Data Builders
+  ""${'"'}
+  directive @generateDataBuilders on SCHEMA
 """.trimIndent()
 
-// Built in scalar and introspection types from the Draft:
-// - https://spec.graphql.org/draft/#sec-Scalars
-// - https://spec.graphql.org/draft/#sec-Schema-Introspection.Schema-Introspection-Schema
-// In theory the user needs to provide the builtin definitions because we cannot know in advance what
-// version of the spec they are using neither if they have extended any of the introspection types.
-// This file is a fallback to make a best-effort guess in case the user didn't provide these definitions, at the
-// risk of potentially validating invalid queries.
+/**
+ * Built in scalar and introspection types from the Draft
+ *  - https://spec.graphql.org/draft/#sec-Scalars
+ *  - https://spec.graphql.org/draft/#sec-Schema-Introspection.Schema-Introspection-Schema
+ *
+ * In theory the user needs to provide the builtin definitions because we cannot know in advance what
+ * version of the spec they are using neither if they have extended any of the introspection types.
+ *
+ * TODO v5: Only keep built-in scalars as almost everything else may evolve and requiring an explicit decision from the user is safer.
+ */
 internal val builtinsDefinitionsStr = """
   ""${'"'}
   The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
@@ -318,7 +389,7 @@ internal val builtinsDefinitionsStr = """
     if: Boolean! = true
   ) on FRAGMENT_SPREAD | INLINE_FRAGMENT
 
-  directive @specifiedBy(url: String!) on SCALAR
+  directive @specifiedBy(url: String!) on SCALAR  
 """.trimIndent()
 
 internal val linkDefinitionsStr = """
@@ -465,4 +536,23 @@ enum CatchTo {
     ""${'"'}
     THROW
 }
+""".trimIndent()
+
+internal val oneOfDefinitionsStr = """
+directive @oneOf on INPUT_OBJECT  
+""".trimIndent()
+
+internal val deferDefinitionsStr = """
+directive @defer(
+  label: String
+  if: Boolean! = true
+) on FRAGMENT_SPREAD | INLINE_FRAGMENT  
+""".trimIndent()
+
+internal val nonNullDefinitionStr = """
+directive @nonnull(fields: String! = "") on OBJECT | FIELD
+""".trimIndent()
+
+internal val disableErrorPropagationStr = """
+directive @experimental_disableErrorPropagation on QUERY | MUTATION | SUBSCRIPTION
 """.trimIndent()
